@@ -40,7 +40,7 @@ export default function Settings() {
       <div className="flex-1 ml-16 pt-16">
         <Header title="Settings" />
 
-        <main className="w-full max-w-6xl p-8 bg-background min-h-screen space-y-8">
+        <main className="w-full max-w-7xl p-8 bg-background min-h-screen space-y-8">
           {/* Profile Card */}
           <Card>
             <CardHeader>
