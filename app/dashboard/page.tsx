@@ -42,7 +42,7 @@ export default function Dashboard() {
             </div>
 
             <div>
-              <SimulationPanel />
+              {/* <SimulationPanel /> */}
             </div>
           </div>
         </main>
