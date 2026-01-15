@@ -27,13 +27,14 @@ export function AMRChart() {
               border: "1px solid #21262d",
               borderRadius: "8px",
               color: "#e0e0e0",
+              fontSize: "12px",
             }}
           />
-          <Bar dataKey="resistance" fill="#00d9ff" radius={[8, 8, 0, 0]}>
+          <Bar dataKey="resistance" fill="#f4f4f4" radius={[8, 8, 0, 0]}>
             {AMR_DATA.map((entry, index) => (
               <Cell
                 key={`cell-${index}`}
-                fill={entry.resistance > 65 ? "#ff4444" : entry.resistance > 50 ? "#ffa500" : "#00ff00"}
+                fill={entry.resistance > 65 ? "#f4f4f4" : entry.resistance > 50 ? "#f4f4f4" : "#f4f4f4"}
               />
             ))}
           </Bar>

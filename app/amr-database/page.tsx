@@ -107,13 +107,13 @@ export default function AMRDatabase() {
                       <td className="py-3 px-4 font-mono text-primary">{record.id}</td>
                       <td className="py-3 px-4 font-semibold">{record.gene}</td>
                       <td className="py-3 px-4">
-                        <span className="px-3 py-1 rounded-full text-xs bg-accent/20 text-accent">
+                        <span className="px-3 py-1 rounded-full text-xs bg-accent/20 text-primary">
                           {record.antibiotic}
                         </span>
                       </td>
                       <td className="py-3 px-4 text-muted-foreground">{record.mechanism}</td>
                       <td className="py-3 px-4">{record.organism}</td>
-                      <td className="py-3 px-4 font-semibold text-secondary">{record.found.toLocaleString()}</td>
+                      <td className="py-3 px-4 font-semibold text-primary">{record.found.toLocaleString()}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -138,7 +138,7 @@ export default function AMRDatabase() {
             </div>
             <div className="glass p-6 rounded-lg text-center">
               <p className="text-muted-foreground text-sm mb-2">Antibiotics Covered</p>
-              <p className="text-3xl font-bold text-accent">128</p>
+              <p className="text-3xl font-bold text-primary">128</p>
             </div>
             <div className="glass p-6 rounded-lg text-center">
               <p className="text-muted-foreground text-sm mb-2">Last Updated</p>

@@ -53,7 +53,7 @@ export function EnvironmentPanel({ state, onChange, disabled }: EnvironmentPanel
               <Droplets className="w-4 h-4" />
               pH Level
             </label>
-            <span className="text-sm font-semibold text-secondary">{state.pH.toFixed(1)}</span>
+            <span className="text-sm font-semibold text-primary">{state.pH.toFixed(1)}</span>
           </div>
           <input
             type="range"
@@ -63,7 +63,7 @@ export function EnvironmentPanel({ state, onChange, disabled }: EnvironmentPanel
             value={state.pH}
             onChange={(e) => handleChange("pH", Number.parseFloat(e.target.value))}
             disabled={disabled}
-            className="w-full accent-secondary disabled:opacity-50"
+            className="w-full accent-primary disabled:opacity-50"
           />
         </div>
 
@@ -74,7 +74,7 @@ export function EnvironmentPanel({ state, onChange, disabled }: EnvironmentPanel
               <Leaf className="w-4 h-4" />
               Nutrient Density
             </label>
-            <span className="text-sm font-semibold text-accent">{state.nutrientDensity}%</span>
+            <span className="text-sm font-semibold text-primary">{state.nutrientDensity}%</span>
           </div>
           <input
             type="range"
@@ -84,7 +84,7 @@ export function EnvironmentPanel({ state, onChange, disabled }: EnvironmentPanel
             value={state.nutrientDensity}
             onChange={(e) => handleChange("nutrientDensity", Number.parseInt(e.target.value))}
             disabled={disabled}
-            className="w-full accent-accent disabled:opacity-50"
+            className="w-full accent-primary disabled:opacity-50"
           />
         </div>
 
@@ -95,7 +95,7 @@ export function EnvironmentPanel({ state, onChange, disabled }: EnvironmentPanel
               <Wind className="w-4 h-4" />
               Oxygen Level
             </label>
-            <span className="text-sm font-semibold text-cyan-400">{state.oxygenLevels}%</span>
+            <span className="text-sm font-semibold text-primary">{state.oxygenLevels}%</span>
           </div>
           <input
             type="range"
@@ -105,7 +105,7 @@ export function EnvironmentPanel({ state, onChange, disabled }: EnvironmentPanel
             value={state.oxygenLevels}
             onChange={(e) => handleChange("oxygenLevels", Number.parseInt(e.target.value))}
             disabled={disabled}
-            className="w-full accent-cyan-400 disabled:opacity-50"
+            className="w-full accent-primary disabled:opacity-50"
           />
         </div>
 

@@ -19,8 +19,9 @@ export function Sidebar() {
 
   return (
     <aside className="fixed left-0 top-0 h-screen w-16 bg-sidebar border-r border-sidebar-border flex flex-col items-center gap-8 py-8 z-50">
+      {/* logo */}
       <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center font-bold text-primary-foreground ">
-        ℌ
+        <img src="/logo_black.png" alt="" className="w-5 h-5" />
       </div>
 
       <nav className="flex flex-col gap-6">

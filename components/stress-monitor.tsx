@@ -12,8 +12,12 @@ interface StressMonitorProps {
 interface CircularGaugeProps {
   label: string
   value: number
-  icon: string
+  icon: ReactNode
 }
+
+// lucide-react 
+import { Thermometer, Scale, Leaf, Wind } from "lucide-react"
+import { ReactNode } from "react"
 
 function CircularGauge({ label, value, icon }: CircularGaugeProps) {
   const radius = 40
@@ -57,10 +61,10 @@ export function StressMonitor({ stressLevels }: StressMonitorProps) {
       <h3 className="text-lg font-semibold mb-6 ">Stress Monitor</h3>
 
       <div className="grid grid-cols-2 gap-4">
-        <CircularGauge label="Temperature" value={stressLevels.temperature} icon="🌡️" />
-        <CircularGauge label="pH Balance" value={stressLevels.pH} icon="⚖️" />
-        <CircularGauge label="Nutrients" value={stressLevels.nutrients} icon="🌱" />
-        <CircularGauge label="Oxygen" value={stressLevels.oxygen} icon="💨" />
+        <CircularGauge label="Temperature" value={stressLevels.temperature} icon={<Thermometer />} />
+        <CircularGauge label="pH Balance" value={stressLevels.pH} icon={<Scale />} />
+        <CircularGauge label="Nutrients" value={stressLevels.nutrients} icon={<Leaf />} />
+        <CircularGauge label="Oxygen" value={stressLevels.oxygen} icon={<Wind />} />
       </div>
 
       <div className="mt-6 p-3 bg-card/50 rounded-lg border border-border">

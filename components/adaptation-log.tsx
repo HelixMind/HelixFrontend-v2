@@ -14,7 +14,7 @@ interface AdaptationLogProps {
 export function AdaptationLog({ mutations }: AdaptationLogProps) {
   return (
     <div className="glass p-6 rounded-lg">
-      <h3 className="text-lg font-semibold mb-4 glow-green">Adaptation Log</h3>
+      <h3 className="text-lg font-semibold mb-4 ">Adaptation Log</h3>
 
       <div className="bg-black/40 rounded-lg max-h-96 overflow-y-auto">
         {mutations.length === 0 ? (
