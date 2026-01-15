@@ -1,5 +1,7 @@
 "use client"
 
+import { Badge } from "@/components/ui/badge"
+
 export interface Mutation {
   generation: number
   position: number
@@ -16,22 +18,22 @@ const SAMPLE_MUTATIONS: Mutation[] = [
 ]
 
 export function MutationTable() {
-  const getImpactColor = (impact: string) => {
+  const getImpactVariant = (impact: Mutation["impact"]) => {
     switch (impact) {
       case "High Risk":
-        return "text-destructive bg-destructive/10"
+        return "fail"
       case "Neutral":
-        return "text-primary bg-primary/10"
+        return "neutral"
       case "Low Risk":
-        return "text-green-400 bg-green-400/10"
+        return "success"
       default:
-        return ""
+        return "default"
     }
   }
 
   return (
     <div className="glass p-6 rounded-lg">
-      <h3 className="text-lg font-semibold mb-4 glow-cyan">Mutation Log</h3>
+      <h3 className="text-lg font-semibold mb-4">Mutation Log</h3>
 
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
@@ -45,14 +47,23 @@ export function MutationTable() {
           </thead>
           <tbody>
             {SAMPLE_MUTATIONS.map((mutation, idx) => (
-              <tr key={idx} className="border-b border-border/30 hover:bg-card/50 transition-colors">
-                <td className="py-3 px-4 font-mono text-primary">{mutation.generation}</td>
-                <td className="py-3 px-4 font-mono text-foreground">{mutation.position}</td>
-                <td className="py-3 px-4 font-mono text-secondary">{mutation.change}</td>
+              <tr
+                key={idx}
+                className="border-b border-border/30 hover:bg-card/50 transition-colors"
+              >
+                <td className="py-3 px-4 font-mono text-primary">
+                  {mutation.generation}
+                </td>
+                <td className="py-3 px-4 font-mono text-foreground">
+                  {mutation.position}
+                </td>
+                <td className="py-3 px-4 font-mono text-secondary">
+                  {mutation.change}
+                </td>
                 <td className="py-3 px-4">
-                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${getImpactColor(mutation.impact)}`}>
+                  <Badge variant={getImpactVariant(mutation.impact)}>
                     {mutation.impact}
-                  </span>
+                  </Badge>
                 </td>
               </tr>
             ))}

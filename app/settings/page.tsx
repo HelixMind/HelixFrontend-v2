@@ -13,12 +13,7 @@ import { Mail, User, Key, AlertTriangle } from "lucide-react";
 
 // shadcn
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 
 export default function Settings() {
@@ -64,15 +59,10 @@ export default function Settings() {
                 <div className="min-w-0">
                   <h3 className="flex items-center gap-2 text-lg font-semibold truncate">
                     <span className="truncate">John Doe</span>
-                    <img
-                      src="./verification_badge.svg"
-                      alt="Verified"
-                      className="w-4 h-4"
-                    />
                   </h3>
                   <p className="text-muted-foreground flex items-center gap-2 truncate">
                     <Mail className="w-4 h-4 shrink-0" />
-                    <span className="truncate">johndoe@example.com</span>
+                    <span className="truncate text-xs">johndoe@example.com</span>
                   </p>
                 </div>
               </div>
@@ -83,11 +73,7 @@ export default function Settings() {
                   <label className="text-sm font-medium text-muted-foreground">
                     Full Name
                   </label>
-                  <Input
-                    value="John Doe"
-                    readOnly
-                    className="mt-1 truncate"
-                  />
+                  <Input value="John Doe" readOnly className="mt-1 truncate" />
                 </div>
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">
@@ -171,7 +157,11 @@ export default function Settings() {
                   {["Light", "Dark", "Auto"].map((theme) => (
                     <Button
                       key={theme}
-                      variant={settings.theme === theme.toLowerCase() ? "default" : "outline"}
+                      variant={
+                        settings.theme === theme.toLowerCase()
+                          ? "default"
+                          : "outline"
+                      }
                       onClick={() =>
                         setSettings({ ...settings, theme: theme.toLowerCase() })
                       }
@@ -188,7 +178,10 @@ export default function Settings() {
                   type="checkbox"
                   checked={settings.notifications}
                   onChange={(e) =>
-                    setSettings({ ...settings, notifications: e.target.checked })
+                    setSettings({
+                      ...settings,
+                      notifications: e.target.checked,
+                    })
                   }
                   className="w-4 h-4 rounded"
                 />
@@ -202,7 +195,10 @@ export default function Settings() {
                   type="checkbox"
                   checked={settings.emailNotifications}
                   onChange={(e) =>
-                    setSettings({ ...settings, emailNotifications: e.target.checked })
+                    setSettings({
+                      ...settings,
+                      emailNotifications: e.target.checked,
+                    })
                   }
                   className="w-4 h-4 rounded"
                 />
@@ -229,13 +225,28 @@ export default function Settings() {
                 Danger Zone
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                These actions are irreversible. Proceed with extreme caution.
-              </p>
-              <Button variant="destructive" className="w-full">
-                Delete All Data
-              </Button>
+            <CardContent className="space-y-6">
+              {/* Danger Zone Description */}
+              <div>
+                <p className="text-sm text-muted-foreground">
+                  These actions are irreversible. Please proceed with extreme
+                  caution.
+                </p>
+              </div>
+
+              {/* Delete All Data Section */}
+              <div className="pt-4 border-t border-border space-y-4">
+                <h4 className="text-md font-semibold text-red-500">
+                  Delete All Data
+                </h4>
+                <p className="text-sm text-muted-foreground">
+                  Permanently delete all your account data. This action cannot
+                  be undone.
+                </p>
+                <Button variant="destructive" className="w-full">
+                  Delete All Data
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </main>

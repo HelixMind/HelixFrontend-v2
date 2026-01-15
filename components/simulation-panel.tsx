@@ -9,7 +9,7 @@ export function SimulationPanel() {
 
   return (
     <div className="glass p-6 rounded-lg">
-      <h3 className="text-lg font-semibold mb-6 glow-purple">Simulation Controls</h3>
+      <h3 className="text-lg font-semibold mb-6 ">Simulation Controls</h3>
 
       <div className="space-y-6">
         <div>
@@ -30,7 +30,7 @@ export function SimulationPanel() {
 
         <div>
           <label className="text-sm text-muted-foreground block mb-3">
-            Insertion Rate: <span className="text-secondary font-semibold">{(insertionRate * 100).toFixed(1)}%</span>
+            Insertion Rate: <span className="text-white font-semibold">{(insertionRate * 100).toFixed(1)}%</span>
           </label>
           <input
             type="range"
@@ -39,13 +39,13 @@ export function SimulationPanel() {
             step="0.01"
             value={insertionRate}
             onChange={(e) => setInsertionRate(Number.parseFloat(e.target.value))}
-            className="w-full accent-secondary"
+            className="w-full accent-primary"
           />
         </div>
 
         <div>
           <label className="text-sm text-muted-foreground block mb-3">
-            Generations: <span className="text-accent font-semibold">{generations}</span>
+            Generations: <span className="text-white font-semibold">{generations}</span>
           </label>
           <input
             type="range"
@@ -53,11 +53,11 @@ export function SimulationPanel() {
             max="50"
             value={generations}
             onChange={(e) => setGenerations(Number.parseInt(e.target.value))}
-            className="w-full accent-accent"
+            className="w-full accent-primary"
           />
         </div>
 
-        <button className="w-full bg-primary hover:bg-primary/80 text-primary-foreground font-semibold py-3 rounded-lg transition-colors mt-6 glow-cyan">
+        <button className="w-full bg-primary hover:bg-primary/80 text-primary-foreground font-semibold py-3 rounded-lg transition-colors mt-6 ">
           Run Simulation
         </button>
       </div>
