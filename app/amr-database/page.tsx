@@ -130,11 +130,11 @@ export default function AMRDatabase() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="glass p-6 rounded-lg text-center">
               <p className="text-muted-foreground text-sm mb-2">Total Genes</p>
-              <p className="text-3xl font-bold glow-cyan">2,847</p>
+              <p className="text-3xl font-bold ">2,847</p>
             </div>
             <div className="glass p-6 rounded-lg text-center">
               <p className="text-muted-foreground text-sm mb-2">Organisms</p>
-              <p className="text-3xl font-bold glow-purple">456</p>
+              <p className="text-3xl font-bold ">456</p>
             </div>
             <div className="glass p-6 rounded-lg text-center">
               <p className="text-muted-foreground text-sm mb-2">Antibiotics Covered</p>

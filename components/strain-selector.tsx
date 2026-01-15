@@ -55,7 +55,7 @@ export function StrainSelector({ selectedStrain, onStrainChange, disabled }: Str
 
   return (
     <div className="glass p-6 rounded-lg">
-      <h3 className="text-lg font-semibold mb-4 glow-cyan flex items-center gap-2">
+      <h3 className="text-lg font-semibold mb-4  flex items-center gap-2">
         <Pipette className="w-5 h-5" />
         Select Strain
       </h3>

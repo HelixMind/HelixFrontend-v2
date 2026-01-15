@@ -14,7 +14,7 @@ const AMR_DATA = [
 export function AMRChart() {
   return (
     <div className="glass p-6 rounded-lg col-span-2">
-      <h3 className="text-lg font-semibold mb-4 glow-cyan">AMR Prediction - Resistance Levels (%)</h3>
+      <h3 className="text-lg font-semibold mb-4 ">AMR Prediction - Resistance Levels (%)</h3>
 
       <ResponsiveContainer width="100%" height={300}>
         <BarChart data={AMR_DATA}>

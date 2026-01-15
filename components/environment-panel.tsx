@@ -22,7 +22,7 @@ export function EnvironmentPanel({ state, onChange, disabled }: EnvironmentPanel
 
   return (
     <div className="glass p-6 rounded-lg h-fit">
-      <h3 className="text-lg font-semibold mb-6 glow-purple">Environment Control</h3>
+      <h3 className="text-lg font-semibold mb-6 ">Environment Control</h3>
 
       <div className="space-y-5">
         {/* Temperature */}

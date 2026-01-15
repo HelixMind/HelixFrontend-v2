@@ -31,7 +31,7 @@ export function MutationTable() {
 
   return (
     <div className="glass p-6 rounded-lg">
-      <h3 className="text-lg font-semibold mb-4 glow-cyan">Mutation Log</h3>
+      <h3 className="text-lg font-semibold mb-4 ">Mutation Log</h3>
 
       <div className="overflow-x-auto">
         <table className="w-full text-sm">

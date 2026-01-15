@@ -18,12 +18,12 @@ export default function MutationSimulator() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2">
               <div className="glass p-8 rounded-lg mb-8">
-                <h3 className="text-lg font-semibold mb-6 glow-cyan">Simulation Visualization</h3>
+                <h3 className="text-lg font-semibold mb-6 ">Simulation Visualization</h3>
 
                 <div className="bg-black/40 rounded-lg p-8 min-h-96 flex items-center justify-center border border-border">
                   <div className="text-center">
                     <div className="w-32 h-32 mx-auto mb-4 border-2 border-primary/50 rounded-full animate-spin" />
-                    <p className="text-primary font-semibold glow-cyan">
+                    <p className="text-primary font-semibold ">
                       {isRunning ? "Simulation Running..." : "Ready to simulate"}
                     </p>
                     <p className="text-muted-foreground text-sm mt-2">Configure parameters and click start to begin</p>
@@ -32,7 +32,7 @@ export default function MutationSimulator() {
               </div>
 
               <div className="glass p-6 rounded-lg">
-                <h3 className="text-lg font-semibold mb-4 glow-cyan">Generation Progress</h3>
+                <h3 className="text-lg font-semibold mb-4 ">Generation Progress</h3>
                 <div className="space-y-3">
                   {[1, 2, 3, 4, 5].map((gen) => (
                     <div key={gen} className="flex items-center gap-3">
@@ -51,7 +51,7 @@ export default function MutationSimulator() {
 
             <div>
               <div className="glass p-6 rounded-lg mb-6">
-                <h3 className="text-lg font-semibold mb-4 glow-purple">Simulation Parameters</h3>
+                <h3 className="text-lg font-semibold mb-4 ">Simulation Parameters</h3>
 
                 <div className="space-y-4 mb-6">
                   <div>

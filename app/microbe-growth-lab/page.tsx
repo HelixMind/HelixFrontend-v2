@@ -129,11 +129,11 @@ export default function MicrobeGrowthLab() {
 
             {/* Quick Controls */}
             <div className="lg:col-span-3 glass p-6 rounded-lg">
-              <h3 className="text-lg font-semibold mb-4 glow-cyan">Simulation Controls</h3>
+              <h3 className="text-lg font-semibold mb-4 ">Simulation Controls</h3>
               <div className="flex gap-3 items-end">
                 <button
                   onClick={() => setIsRunning(!isRunning)}
-                  className="flex-1 bg-primary hover:bg-primary/80 text-primary-foreground font-semibold py-3 rounded-lg transition-colors flex items-center justify-center gap-2 glow-cyan"
+                  className="flex-1 bg-primary hover:bg-primary/80 text-primary-foreground font-semibold py-3 rounded-lg transition-colors flex items-center justify-center gap-2 "
                 >
                   {isRunning ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
                   {isRunning ? "Pause" : "Start"} Simulation
@@ -147,7 +147,7 @@ export default function MicrobeGrowthLab() {
                 </button>
                 <div className="text-center">
                   <p className="text-sm text-muted-foreground">Time Steps</p>
-                  <p className="text-2xl font-bold glow-cyan">{timeSteps}</p>
+                  <p className="text-2xl font-bold ">{timeSteps}</p>
                 </div>
               </div>
             </div>

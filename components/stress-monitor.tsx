@@ -54,7 +54,7 @@ function CircularGauge({ label, value, icon }: CircularGaugeProps) {
 export function StressMonitor({ stressLevels }: StressMonitorProps) {
   return (
     <div className="glass p-6 rounded-lg h-fit">
-      <h3 className="text-lg font-semibold mb-6 glow-purple">Stress Monitor</h3>
+      <h3 className="text-lg font-semibold mb-6 ">Stress Monitor</h3>
 
       <div className="grid grid-cols-2 gap-4">
         <CircularGauge label="Temperature" value={stressLevels.temperature} icon="🌡️" />

@@ -10,7 +10,7 @@ interface GrowthChartProps {
 export function GrowthChart({ data, antibioticActive }: GrowthChartProps) {
   return (
     <div className="glass p-6 rounded-lg">
-      <h3 className="text-lg font-semibold mb-4 glow-cyan">Population Growth Over Time</h3>
+      <h3 className="text-lg font-semibold mb-4 ">Population Growth Over Time</h3>
 
       <ResponsiveContainer width="100%" height={400}>
         <LineChart data={data} margin={{ top: 5, right: 30, left: 0, bottom: 5 }}>

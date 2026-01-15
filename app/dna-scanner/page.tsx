@@ -16,7 +16,7 @@ export default function DNAScanner() {
             <div className="lg:col-span-2">
               <div className="glass p-12 rounded-lg border-2 border-dashed border-primary/50 text-center">
                 <Upload className="w-16 h-16 mx-auto mb-4 text-primary" />
-                <h3 className="text-xl font-semibold mb-2 glow-cyan">Upload DNA Sequence</h3>
+                <h3 className="text-xl font-semibold mb-2 ">Upload DNA Sequence</h3>
                 <p className="text-muted-foreground mb-6">Drop your FASTA or GenBank files here, or click to browse</p>
                 <button className="bg-primary hover:bg-primary/80 text-primary-foreground font-semibold px-8 py-3 rounded-lg transition-colors">
                   Browse Files
@@ -24,7 +24,7 @@ export default function DNAScanner() {
               </div>
 
               <div className="glass p-6 rounded-lg mt-8">
-                <h3 className="text-lg font-semibold mb-4 glow-cyan">Recent Scans</h3>
+                <h3 className="text-lg font-semibold mb-4 ">Recent Scans</h3>
                 <div className="space-y-4">
                   {[1, 2, 3].map((i) => (
                     <div
@@ -45,7 +45,7 @@ export default function DNAScanner() {
 
             <div>
               <div className="glass p-6 rounded-lg">
-                <h3 className="text-lg font-semibold mb-4 glow-purple">Scanner Settings</h3>
+                <h3 className="text-lg font-semibold mb-4 ">Scanner Settings</h3>
                 <div className="space-y-4">
                   <div>
                     <label className="text-sm text-muted-foreground block mb-2">Analysis Type</label>

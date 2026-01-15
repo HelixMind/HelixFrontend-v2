@@ -24,7 +24,7 @@ export function DNAViewer() {
 
   return (
     <div className="glass p-6 rounded-lg col-span-2">
-      <h3 className="text-lg font-semibold mb-4 glow-cyan">DNA Sequence Viewer</h3>
+      <h3 className="text-lg font-semibold mb-4 ">DNA Sequence Viewer</h3>
 
       <div className="bg-black/40 border border-border rounded-lg p-6 font-mono text-sm overflow-hidden">
         <div className="flex items-center gap-4">

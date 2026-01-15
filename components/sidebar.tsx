@@ -19,7 +19,7 @@ export function Sidebar() {
 
   return (
     <aside className="fixed left-0 top-0 h-screen w-16 bg-sidebar border-r border-sidebar-border flex flex-col items-center gap-8 py-8 z-50">
-      <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center font-bold text-primary-foreground glow-cyan">
+      <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center font-bold text-primary-foreground ">
         ℌ
       </div>
 
@@ -36,7 +36,7 @@ export function Sidebar() {
               className={cn(
                 "w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-200",
                 isActive
-                  ? "bg-primary text-primary-foreground glow-cyan"
+                  ? "bg-primary text-primary-foreground "
                   : "text-sidebar-foreground hover:bg-sidebar-accent/20",
               )}
             >
