@@ -84,9 +84,9 @@ export function Sidebar() {
             )}
 
             {expanded ? (
-              <PanelLeftOpen className="cursor-pointer" />
-            ) : (
               <PanelRightOpen className="cursor-pointer" />
+            ) : (
+              <PanelLeftOpen className="cursor-pointer" />
             )}
           </button>
         </div>
