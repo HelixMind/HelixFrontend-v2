@@ -53,7 +53,7 @@ export function Sidebar() {
       {/* Overlay */}
       {expanded && (
         <div
-          className="fixed inset-0 bg-black/40 z-40 backdrop-blur-sm"
+          className="fixed inset-0 bg-black/40 z-40 backdrop-blur-xs"
           onClick={() => setExpanded(false)}
         />
       )}
