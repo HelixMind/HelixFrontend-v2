@@ -51,7 +51,7 @@ export default function DNAScanner() {
     <div className="flex">
       <Sidebar />
       <div className="flex-1 ml-16 pt-16">
-        <Header title="Fasta Reader" />
+        <Header title="DNA Scanner" />
 
         <main className="p-8 bg-background min-h-screen">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
