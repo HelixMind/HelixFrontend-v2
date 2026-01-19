@@ -124,7 +124,7 @@ export default function Settings() {
             </CardHeader>
             <CardContent className="space-y-6">
               {/* API Key */}
-              <div>
+              {/* <div>
                 <label className="text-sm text-muted-foreground block mb-2">
                   API Key
                 </label>
@@ -137,7 +137,7 @@ export default function Settings() {
                   />
                   <Button>Regenerate</Button>
                 </div>
-              </div>
+              </div> */}
 
               {/* Data Retention */}
               <div>
