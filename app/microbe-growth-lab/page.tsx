@@ -153,7 +153,7 @@ export default function MicrobeGrowthLab() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
             {/* Main Growth Chart */}
             <div className="lg:col-span-2.5">
               <GrowthChart data={populationData} antibioticActive={simulationState.antibioticActive} />
