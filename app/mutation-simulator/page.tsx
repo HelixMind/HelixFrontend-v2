@@ -32,7 +32,6 @@ export default function MutationSimulator() {
         <Header title="Mutation Simulator" />
 
         <main className="p-8 bg-background min-h-screen">
-
           {/* Upload */}
           <div className="glass p-12 rounded-lg border-2 border-dashed border-primary/50 text-center mb-10">
             <Upload className="w-12 h-12 mx-auto mb-4 text-primary" />
@@ -80,7 +79,9 @@ export default function MutationSimulator() {
                       }`}
                     />
                     <p className="text-primary font-semibold">
-                      {isRunning ? "Simulation Running..." : "Ready to simulate"}
+                      {isRunning
+                        ? "Simulation Running..."
+                        : "Ready to simulate"}
                     </p>
                     <p className="text-muted-foreground text-sm mt-2">
                       Upload a sequence and click start
@@ -95,11 +96,15 @@ export default function MutationSimulator() {
                 </h3>
                 <div className="space-y-3 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Total Mutations:</span>
+                    <span className="text-muted-foreground">
+                      Total Mutations:
+                    </span>
                     <span className="text-primary font-semibold">487</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Substitutions:</span>
+                    <span className="text-muted-foreground">
+                      Substitutions:
+                    </span>
                     <span className="text-primary font-semibold">392</span>
                   </div>
                   <div className="flex justify-between">
@@ -121,7 +126,7 @@ export default function MutationSimulator() {
                       </span>
                       <div className="flex-1 bg-card rounded-full h-2 overflow-hidden">
                         <div
-                          className="h-full bg-gradient-to-r from-primary to-secondary rounded-full transition-all duration-500"
+                          className="h-full bg-linear-to-r from-primary to-secondary rounded-full transition-all duration-500"
                           style={{ width: `${Math.random() * 100}%` }}
                         />
                       </div>
@@ -139,7 +144,6 @@ export default function MutationSimulator() {
                 </h3>
 
                 <div className="space-y-4 mb-6">
-
                   {/* Temperature */}
                   <div>
                     <label className="text-sm text-muted-foreground block mb-2">
@@ -237,7 +241,11 @@ export default function MutationSimulator() {
                     onClick={handleStart}
                     className="flex-1 bg-primary hover:bg-primary/80 text-primary-foreground font-semibold py-2 rounded-lg transition-colors flex items-center justify-center gap-2"
                   >
-                    {isRunning ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+                    {isRunning ? (
+                      <Pause className="w-4 h-4" />
+                    ) : (
+                      <Play className="w-4 h-4" />
+                    )}
                     {isRunning ? "Pause" : "Start"}
                   </button>
 

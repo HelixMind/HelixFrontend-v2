@@ -64,11 +64,6 @@ export default function Settings() {
                 <div className="min-w-0">
                   <h3 className="flex items-center gap-2 text-lg font-semibold truncate">
                     <span className="truncate">John Doe</span>
-                    <img
-                      src="./verification_badge.svg"
-                      alt="Verified"
-                      className="w-4 h-4"
-                    />
                   </h3>
                   <p className="text-muted-foreground flex items-center gap-2 truncate">
                     <Mail className="w-4 h-4 shrink-0" />

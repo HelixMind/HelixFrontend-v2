@@ -23,7 +23,7 @@ import {
 export function Sidebar() {
   const pathname = usePathname();
   const [expanded, setExpanded] = useState(false);
-  const [showLabels, setShowLabels] = useState(false);
+  const [showLabels, setShowLabels] = useState(false); //this has a timer for the expansion effect it is used to slow the conditional rendering to make it feel smoother and less instant
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
@@ -31,7 +31,7 @@ export function Sidebar() {
     if (expanded) {
       timer = setTimeout(() => {
         setShowLabels(true);
-      }, 50); // must match duration-300
+      }, 100); // must match duration-300
     } else {
       setShowLabels(false);
     }
@@ -91,6 +91,7 @@ export function Sidebar() {
           </button>
         </div>
 
+        <div className="h-full flex flex-col justify-between">
         <nav
           className={cn(
             "border-t border-t-accent flex flex-col items-center justify-center gap-6 w-full px-4 pt-6 duration-150 ease-out transition-all",
@@ -138,6 +139,30 @@ export function Sidebar() {
             );
           })}
         </nav>
+
+        <Link href={"/settings"} className={cn("w-full flex justify-center items-center gap-4", expanded && "px-4 justify-start")}>
+          {/* Profile Circle */}
+          <div
+            className={cn(
+              "shrink-0 w-10 h-10 rounded-full bg-secondary flex items-center justify-center text-base font-display font-bold"
+            )}
+          >
+            U
+          </div>
+
+          {/* Name & Email */}
+          {showLabels && (
+            <div>
+              <h3 className="flex items-center gap-2 text-lg font-semibold truncate transition-all ease-out duration-150">
+                <span className="text-sm truncate">John Doe</span>
+              </h3>
+              <p className="text-muted-foreground flex items-center gap-2 truncate">
+                <span className="text-xs truncate">johndoe@example.com</span>
+              </p>
+            </div>
+          )}
+        </Link>
+        </div>
       </aside>
     </>
   );
