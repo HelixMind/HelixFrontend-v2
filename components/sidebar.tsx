@@ -19,6 +19,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import Logo from "./ui/Logo";
 
 export function Sidebar() {
   const pathname = usePathname();
@@ -77,10 +78,7 @@ export function Sidebar() {
             className="w-full rounded-full flex items-center justify-between gap-6 text-primary"
           >
             {showLabels && (
-              <div className="flex items-center gap-2.5">
-                <img src="/logo_white.png" alt="" className="w-6 h-6" />
-                <span className="truncate">HelixMind</span>
-              </div>
+                <Logo />
             )}
 
             {expanded ? (
