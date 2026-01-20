@@ -4,10 +4,22 @@ import { Sidebar } from "@/components/sidebar";
 import { Header } from "@/components/header";
 import { Play, Pause, RotateCcw, Upload } from "lucide-react";
 import { useState } from "react";
+import { simulate_mutation } from "@/api/simulation";
 
 export default function MutationSimulator() {
   const [isRunning, setIsRunning] = useState(false);
   const [queryFastaFile, setQueryFastaFile] = useState<File | null>(null);
+  const [params, setParams] = useState<{
+    tempUnit: "C" | "F",
+    temperature: number,
+    substitutionRate: number,
+    numGenerations: number
+  }>({
+    tempUnit: "C",
+    temperature: 0,
+    substitutionRate: 0,
+    numGenerations: 1
+  });
 
   // Handle FASTA upload
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -17,12 +29,16 @@ export default function MutationSimulator() {
   };
 
   // Prevent starting without file
-  const handleStart = () => {
+  const handleStart = async () => {
     if (!queryFastaFile) {
       alert("Please upload a FASTA file before starting the simulation.");
       return;
     }
+
     setIsRunning(!isRunning);
+
+    console.log(params);
+    await simulate_mutation(queryFastaFile, params);
   };
 
   return (
@@ -74,9 +90,8 @@ export default function MutationSimulator() {
                 <div className="bg-black/40 rounded-lg p-8 min-h-96 flex items-center justify-center border border-border">
                   <div className="text-center">
                     <div
-                      className={`w-32 h-32 mx-auto mb-4 border-2 border-primary/50 rounded-full ${
-                        isRunning ? "animate-spin" : ""
-                      }`}
+                      className={`w-32 h-32 mx-auto mb-4 border-2 border-primary/50 rounded-full ${isRunning ? "animate-spin" : ""
+                        }`}
                     />
                     <p className="text-primary font-semibold">
                       {isRunning
@@ -152,12 +167,13 @@ export default function MutationSimulator() {
                     <div className="flex gap-2">
                       <input
                         type="number"
-                        defaultValue={37}
+                        value={params.temperature}
+                        onChange={(e) => { setParams(prev => ({ ...prev, temperature: parseFloat(e.target.value) })) }}
                         className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary"
                       />
-                      <select className="bg-card border border-border rounded-lg px-3 py-2 text-sm">
-                        <option>°C</option>
-                        <option>°F</option>
+                      <select value={params.tempUnit} onChange={(e) => { setParams((prev) => ({ ...prev, tempUnit: e.target.value as "C" | "F" })) }} className="bg-card border border-border rounded-lg px-3 py-2 text-sm">
+                        <option value={"C"}>°C</option>
+                        <option value={"F"}>°F</option>
                       </select>
                     </div>
                   </div>
@@ -215,7 +231,19 @@ export default function MutationSimulator() {
                     </label>
                     <input
                       type="number"
-                      defaultValue="10"
+                      value={params.numGenerations}
+                      onChange={(e) => {
+                        const nG = parseInt(e.target.value);
+                        if (nG > 10) {
+                          setParams(prev => ({ ...prev, numGenerations: 10 }))
+                        } else if (nG < 1) {
+                          setParams(prev => ({ ...prev, numGenerations: 1 }))
+                        } else {
+                          setParams(prev => ({ ...prev, numGenerations: nG }))
+                        }
+                      }}
+                      max={10}
+                      min={1}
                       className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary"
                     />
                   </div>
@@ -228,10 +256,13 @@ export default function MutationSimulator() {
                     <input
                       type="range"
                       min="0"
-                      max="1"
-                      step="0.01"
-                      defaultValue="0.05"
+                      max="10"
+                      step="0.1"
+                      value={params.substitutionRate}
                       className="w-full accent-primary"
+                      onChange={(e) => {
+                        setParams((prev) => ({ ...prev, substitutionRate: parseFloat(e.target.value) }))
+                      }}
                     />
                   </div>
                 </div>
