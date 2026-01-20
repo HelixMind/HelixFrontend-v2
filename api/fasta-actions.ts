@@ -1,15 +1,13 @@
 import { request } from "./main";
 
-export async function parse_fasta(ref_fasta_file: File, query_fasta_file: File) {
+export async function parse_fasta(fasta_file: File) {
     const formData = new FormData();
 
-    formData.append("ref_fasta_files", ref_fasta_file);
-    formData.append("query_fasta_files", query_fasta_file);
-    formData.append("seq_id", "NZ_CP_CASE_01")
+    formData.append("fasta-file", fasta_file);
 
     const response = await request<{
         response: any
-    }>("/simulation/check-mutation", {
+    }>("/simulation/parse-fasta", {
         headers: {
             // "Content-Type": "multipart/form-data"
         },
@@ -18,4 +16,6 @@ export async function parse_fasta(ref_fasta_file: File, query_fasta_file: File) 
     });
 
     console.log(response);
+
+    return response;
 }

@@ -2,32 +2,28 @@
 
 import { Sidebar } from "@/components/sidebar"
 import { Header } from "@/components/header"
-import { Upload, FileText } from "lucide-react"
+import { Upload, FileText, Info } from "lucide-react"
 import { useState } from "react"
-import { parse_fasta } from "../api/fasta-actions"
+import { parse_fasta } from "../../api/fasta-actions"
 
 // shadcn
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 
 export default function DNAScanner() {
-  const [ref_fasta_file, set_ref_fasta_file] = useState<File|undefined>(undefined)
-  const [query_fasta_file, set_query_fasta_file] = useState<File|undefined>(undefined)
+  const [fasta_file, set_fasta_file] = useState<File | undefined>(undefined)
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]; // files is a FileList, we want the first one
     const type = event.target.id;
-  
+
     if (!file) {
       return;
     }
 
-    if (type == "ref_fasta") {
+    if (type == "fasta_file") {
       // To Do: Run a ui action to indicate that a ref_fasta has been uploaded
-      set_ref_fasta_file(file);
-    } else if (type == "query_fasta") {
-      // To Do: Run a ui action to indicate that a query_fasta has been uploaded
-      set_query_fasta_file(file);
+      set_fasta_file(file);
     } else {
       // Info: A debug block
       throw new Error("No actual file selected")
@@ -37,14 +33,12 @@ export default function DNAScanner() {
   const handleFastaFileSubmit = async (event: any) => {
     event.preventDefault();
 
-    if (!ref_fasta_file || !query_fasta_file) {
+    if (!fasta_file) {
       // TO Do: Remember to handle errors, this should throw an error to pop up a toast or notification or something
       return;
     }
 
-    console.log(ref_fasta_file, query_fasta_file)
-
-    await parse_fasta(ref_fasta_file, query_fasta_file);
+    await parse_fasta(fasta_file);
   }
 
   return (
@@ -54,30 +48,28 @@ export default function DNAScanner() {
         <Header title="DNA Scanner" />
 
         <main className="p-8 bg-background min-h-screen">
+          <div className="flex flex-row items-center gap-2 justify-start glass my-4 p-4 text-gray-400 max-w-[700px]">
+            <Info size={"18"} />
+            <p className="text-sm">
+              The scanner prepares raw genomic data for simulation by converting unstructured files into a standardized Sequence Object. <br />
+
+              Input: Multi-FASTA/GenBank ➔ Output: Validated JSON Map.
+            </p>
+          </div>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
             <div className="lg:col-span-2">
-              <form className="grid lg:grid-cols-2 gap-3" onSubmit={handleFastaFileSubmit}>
+              <form className="flex flex-col gap-3" onSubmit={handleFastaFileSubmit}>
                 <div className="glass p-12 rounded-lg border-2 border-dashed border-primary/50 text-center">
                   <Upload className="w-12 h-12 mx-auto mb-4 text-primary" />
-                  <h3 className="text-xl font-semibold mb-2 ">Upload Reference Sequence</h3>
+                  <h3 className="text-xl font-semibold mb-2 ">Upload Fasta File</h3>
                   <p className="text-sm text-muted-foreground mb-6">Drop your FASTA or GenBank files here, or click to browse</p>
-                    <label htmlFor="ref_fasta" className="bg-primary hover:bg-primary/80 text-primary-foreground font-semibold px-8 py-3 rounded-lg transition-colors">
-                      Browse Files
-                      <input type="file" name="ref_fasta" id="ref_fasta" className="hidden" onChange={handleFileChange} />
-                    </label>
+                  <label htmlFor="fasta_file" className="bg-primary hover:bg-primary/80 text-primary-foreground font-semibold px-8 py-3 rounded-lg transition-colors">
+                    Browse Files
+                    <input type="file" name="fasta_file" id="fasta_file" className="hidden" onChange={handleFileChange} />
+                  </label>
                 </div>
-                <div className="glass p-12 rounded-lg border-2 border-dashed border-primary/50 text-center">
-                  <Upload className="w-12 h-12 mx-auto mb-4 text-primary" />
-                  <h3 className="text-xl font-semibold mb-2 ">Upload Query Sequence</h3>
-                  <p className="text-sm text-muted-foreground mb-6">Drop your FASTA or GenBank files here, or click to browse</p>
-                    <label htmlFor="query_fasta" className="bg-primary hover:bg-primary/80 text-primary-foreground font-semibold px-8 py-3 rounded-lg transition-colors">
-                      Browse Files
-                      <input type="file" name="query_fasta" id="query_fasta" className="hidden" onChange={handleFileChange} />
-                    </label>
-                </div>
-
-                <div className="lg:col-span-2 flex justify-center">
-                  <Button className="w-full py-4 font-bold" size={"lg"}>Run Mutation Check</Button>
+                <div className="flex justify-center">
+                  <Button className="w-full py-4 font-bold" size={"lg"}>Read Fasta File</Button>
                 </div>
               </form>
 

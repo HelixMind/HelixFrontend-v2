@@ -12,7 +12,6 @@ const request = async function <T>(
     const bearer_token = localStorage.getItem("Helix_user_token") ?? "";
 
     const headers = {
-      // "Content-Type": "application/json",
       ...(bearer_token.trim().length > 0 && {
         Authorization: `Bearer ${bearer_token}`,
       }),

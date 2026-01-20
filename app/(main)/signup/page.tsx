@@ -15,6 +15,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function signupPage() {
   const [name, setName] = useState("");
@@ -23,12 +24,7 @@ export default function signupPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-
-  // Placeholder signUp function (replace with real auth)
-  const signUp = async (name: string, email: string, password: string) => {
-    return { success: true, message: "Account created!" };
-  };
+  const { signUp, isLoading } = useAuth();
 
   const validateEmail = (email: string) => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -75,10 +71,9 @@ export default function signupPage() {
       setError("Passwords do not match");
       return;
     }
-
-    setIsLoading(true);
+    
     const result = await signUp(name, email, password);
-    setIsLoading(false);
+    console.log(result);
 
     if (result.success) {
       toast.success(result.message);
