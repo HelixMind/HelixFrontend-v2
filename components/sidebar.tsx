@@ -7,7 +7,7 @@ import {
   LayoutDashboard,
   Zap,
   Shuffle,
-  Database,
+  Microscope,
   Settings,
   Beaker,
   PanelLeftOpen,
@@ -45,7 +45,7 @@ export function Sidebar() {
     { href: "/dna-scanner", icon: Zap, label: "DNA Scanner" },
     { href: "/mutation-simulator", icon: Shuffle, label: "Mutation Simulator" },
     { href: "/microbe-growth-lab", icon: Beaker, label: "Microbe Lab" },
-    { href: "/amr-database", icon: Database, label: "AMR Database" },
+    { href: "/amr-analysis-engine", icon: Microscope, label: "AMR Analysis Engine" },
     { href: "/settings", icon: Settings, label: "Settings" },
   ];
 

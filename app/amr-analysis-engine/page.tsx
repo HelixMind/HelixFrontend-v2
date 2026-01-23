@@ -71,7 +71,7 @@ export default function AMRDatabase() {
     <div className="flex">
       <Sidebar />
       <div className="flex-1 ml-16 pt-16">
-        <Header title="AMR Database" />
+        <Header title="AMR Analysis Engine" />
 
         <main className="p-8 bg-background min-h-screen">
           <div className="glass p-6 rounded-lg mb-8">
