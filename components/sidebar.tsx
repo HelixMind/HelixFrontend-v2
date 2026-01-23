@@ -93,7 +93,8 @@ export function Sidebar() {
         <nav
           className={cn(
             "border-t border-t-accent flex flex-col items-center justify-center gap-6 w-full px-4 pt-6 duration-150 ease-out transition-all",
-            expanded && "pl-4 items-start justify-center"
+            expanded && "pl-4 items-start justify-center",
+            expanded ? "w-64" : "w-16",
           )}
         >
           {navItems.map((item) => {
