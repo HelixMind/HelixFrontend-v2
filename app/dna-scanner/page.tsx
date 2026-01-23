@@ -49,7 +49,7 @@ export default function DNAScanner() {
 
         <main className="p-8 bg-background min-h-screen">
           <div className="flex flex-row items-center gap-2 justify-start glass my-4 p-4 text-gray-400 max-w-[700px]">
-            <Info size={"18"} />
+            <Info className="size-4 shrink-0" />
             <p className="text-sm">
               The scanner prepares raw genomic data for simulation by converting unstructured files into a standardized Sequence Object. <br />
 
