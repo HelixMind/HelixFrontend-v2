@@ -1,4 +1,4 @@
-const BASE_URL = "http://localhost:3100/api/v1";
+const BASE_URL = "https://helix-core-backend.onrender.com/api/v1";
 
 const request = async function <T>(
   endpoint: string,
