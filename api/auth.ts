@@ -49,7 +49,7 @@ const login = async function(payload: { email: string, password: string}) {
 }
 
 const checkAuth = async function() {
-    return await request<{
+    return request<{
         "fname": string,
         "lname": string,
         "email": string,
