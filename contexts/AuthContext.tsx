@@ -1,6 +1,7 @@
 "use client"
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import {signup, login, checkAuth} from "@/api/auth"
+import { useRouter } from "next/navigation";
 
 type initAuthContextValueType = {
     user: {
@@ -21,6 +22,7 @@ export function AuthProvider({ children }: { children: ReactNode}) {
     email: string
   } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const navigate = useRouter();
 
   useEffect(() => {
     (async function() {
@@ -30,11 +32,11 @@ export function AuthProvider({ children }: { children: ReactNode}) {
           name: `${response.fname} ${response.lname}`,
           email: response.email
         });
+        setIsLoading(false);
       } catch (error) {
         setUser(null);
-        console.error("Unable to check user state")
-      } finally {
         setIsLoading(false);
+        navigate.push("/pass")
       }
     })();
   }, []);

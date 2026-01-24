@@ -4,7 +4,7 @@ import { Sidebar } from "@/components/sidebar"
 import { Header } from "@/components/header"
 import { Upload, FileText, Info } from "lucide-react"
 import { useState } from "react"
-import { parse_fasta } from "../../api/fasta-actions"
+import { parse_fasta } from "../../../api/fasta-actions"
 
 // shadcn
 import { Button } from "@/components/ui/button"

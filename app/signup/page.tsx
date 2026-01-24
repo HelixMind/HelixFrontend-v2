@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Eye, EyeOff, AlertCircle } from "lucide-react";
+import { Eye, EyeOff, AlertCircle, Check } from "lucide-react";
 
 import Logo from "@/components/ui/Logo";
 import { Button } from "@/components/ui/button";
@@ -15,42 +15,70 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
+import { useRouter } from "next/navigation";
 
-export default function SignInPage() {
+export default function signupPage() {
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const { signUp, isLoading } = useAuth();
+  const navigate = useRouter();
 
-  // Placeholder signIn function (replace with real auth)
-  const signIn = async (email: string, password: string) => {
-    if (email === "test@example.com" && password === "Password123!") {
-      return { success: true, message: "Signed in!" };
-    } else {
-      return { success: false, error: "Invalid email or password" };
-    }
+  const validateEmail = (email: string) => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   };
+
+  const passwordRequirements = [
+    { label: "At least 8 characters", met: password.length >= 8 },
+    { label: "Contains a number", met: /\d/.test(password) },
+    {
+      label: "Contains a special character",
+      met: /[!@#$%^&*(),.?":{}|<>]/.test(password),
+    },
+    { label: "Contains uppercase letter", met: /[A-Z]/.test(password) },
+    { label: "Contains lowercase letter", met: /[a-z]/.test(password) },
+  ];
+
+  const allRequirementsMet = passwordRequirements.every((r) => r.met);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+
+    if (!name.trim()) {
+      setError("Name is required");
+      return;
+    }
+
     if (!email.trim()) {
       setError("Email is required");
       return;
     }
-    if (!password.trim()) {
-      setError("Password is required");
+
+    if (!validateEmail(email)) {
+      setError("Please enter a valid email address");
       return;
     }
 
-    setIsLoading(true);
-    const result = await signIn(email, password);
-    setIsLoading(false);
+    if (!allRequirementsMet) {
+      setError("Password does not meet requirements");
+      return;
+    }
 
+    if (password !== confirmPassword) {
+      setError("Passwords do not match");
+      return;
+    }
+    
+    const result = await signUp(name, email, password);
+    console.log(result);
+    
     if (result.success) {
-      toast.success(result.message);
-      // Redirect or update UI here
+      navigate.push("/signin");
     } else {
       setError(result.error || "Something went wrong");
     }
@@ -65,12 +93,13 @@ export default function SignInPage() {
         </div>
         <div className="space-y-6">
           <h1 className="text-5xl font-display font-bold leading-tight">
-            Welcome Back
+            Accelerate
             <br />
-            <span className="text-muted-foreground">to HelixMind.</span>
+            <span className="text-muted-foreground">biological discovery.</span>
           </h1>
           <p className="text-muted-foreground text-lg max-w-md">
-            Sign in to access your genomic analysis tools and mutation simulations.
+            Use AI-powered genomic analysis to explore, simulate, and predict
+            biological outcomes with confidence.
           </p>
         </div>
         <p className="text-sm text-muted-foreground">© 2025 HelixMind. All rights reserved.</p>
@@ -83,8 +112,8 @@ export default function SignInPage() {
             <div className="lg:hidden flex items-center justify-center gap-3 mb-6">
               <Logo />
             </div>
-            <CardTitle className="text-2xl font-display">Sign In</CardTitle>
-            <CardDescription>Enter your credentials to continue</CardDescription>
+            <CardTitle className="text-2xl font-display">Create an account</CardTitle>
+            <CardDescription>Enter your details to get started</CardDescription>
           </CardHeader>
 
           <CardContent>
@@ -97,13 +126,22 @@ export default function SignInPage() {
               )}
 
               <div className="space-y-2">
+                <label className="text-sm font-medium">Full Name</label>
+                <Input
+                  type="text"
+                  placeholder="John Doe"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-2">
                 <label className="text-sm font-medium">Email</label>
                 <Input
                   type="email"
                   placeholder="name@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  autoComplete="email"
                 />
               </div>
 
@@ -112,10 +150,9 @@ export default function SignInPage() {
                 <div className="relative">
                   <Input
                     type={showPassword ? "text" : "password"}
-                    placeholder="Enter your password"
+                    placeholder="Create a password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    autoComplete="current-password"
                     className="pr-10"
                   />
                   <button
@@ -126,23 +163,38 @@ export default function SignInPage() {
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
+                {password && (
+                  <div className="space-y-1 mt-2">
+                    {passwordRequirements.map((req, i) => (
+                      <div key={i} className="flex items-center gap-2 text-xs">
+                        <Check
+                          className={`w-3 h-3 ${req.met ? "text-green-500" : "text-muted-foreground"}`}
+                        />
+                        <span>{req.label}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
-              <Button type="submit" className="w-full" size="lg" disabled={isLoading}>
-                {isLoading ? "Signing in..." : "Sign In"}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Confirm Password</label>
+                <Input
+                  type="password"
+                  placeholder="Confirm your password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                />
+              </div>
+
+              <Button type="submit" className="w-full" size="lg" disabled={isLoading || !allRequirementsMet}>
+                {isLoading ? "Creating account..." : "Create Account"}
               </Button>
 
               <p className="text-center text-sm text-muted-foreground">
-                Don't have an account?{" "}
-                <Link href="/signup" className="text-foreground hover:underline font-medium">
-                  Create one
-                </Link>
-              </p>
-
-              <p className="-mt-2 text-center text-sm text-muted-foreground">
-                Forgot password?{" "}
-                <Link href="/reset-password" className="text-foreground hover:underline font-medium">
-                  reset-password
+                Already have an account?{" "}
+                <Link href="/signin" className="text-foreground hover:underline font-medium">
+                  Sign in
                 </Link>
               </p>
             </form>
