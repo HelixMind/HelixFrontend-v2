@@ -36,7 +36,6 @@ export function AuthProvider({ children }: { children: ReactNode}) {
       } catch (error) {
         setUser(null);
         setIsLoading(false);
-        navigate.push("/pass")
       }
     })();
   }, []);

@@ -14,14 +14,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useAuth } from "@/contexts/AuthContext";
 
 export function Header({ title }: { title: string }) {
+  const {signOut} = useAuth();
   const router = useRouter();
 
-  function handleSignOut() {
-    const [smallScreen, setSmallScreen] = useState(false);
-    // later: clear tokens / session here
-    router.push("/signup");
+  const handleSignOut = async function() {
+    await signOut();
+    router.push("/signin");
   }
 
   return (
