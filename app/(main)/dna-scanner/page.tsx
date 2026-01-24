@@ -3,15 +3,17 @@
 import { Sidebar } from "@/components/sidebar"
 import { Header } from "@/components/header"
 import { Upload, FileText, Info } from "lucide-react"
-import { useState } from "react"
-import { parse_fasta } from "../../../api/fasta-actions"
+import { useEffect, useState } from "react"
+import { parse_fasta, previouslyReadFastas } from "../../../api/fasta-actions"
 
 // shadcn
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { useAuth } from "@/contexts/AuthContext"
 
 export default function DNAScanner() {
-  const [fasta_file, set_fasta_file] = useState<File | undefined>(undefined)
+  const [fasta_file, set_fasta_file] = useState<File | undefined>(undefined);
+  const { user } = useAuth();
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]; // files is a FileList, we want the first one
@@ -40,6 +42,10 @@ export default function DNAScanner() {
 
     await parse_fasta(fasta_file);
   }
+
+  useEffect(() => {
+    previouslyReadFastas();
+  }, [user])
 
   return (
     <div className="flex">
