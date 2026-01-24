@@ -2,6 +2,7 @@
 
 import { Search, User, Settings, LogOut } from "lucide-react";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import NotificationBell from "@/components/notifications/NotificationBell";
 
@@ -18,13 +19,14 @@ export function Header({ title }: { title: string }) {
   const router = useRouter();
 
   function handleSignOut() {
+    const [smallScreen, setSmallScreen] = useState(false);
     // later: clear tokens / session here
     router.push("/signup");
   }
 
   return (
     <header className="fixed top-0 left-16 right-0 h-16 bg-background/80 backdrop-blur-lg border-b border-border flex items-center justify-between px-8 z-40">
-      <h1 className="text-2xl font-bold text-foreground">{title}</h1>
+      <h1 className="text-lg lg:text-2xl font-bold text-foreground">{title}</h1>
 
       <div className="flex items-center gap-6">
         {/* Search */}
