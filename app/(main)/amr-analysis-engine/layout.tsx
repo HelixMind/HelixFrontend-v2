@@ -57,7 +57,7 @@ export default function AMRLayout({ children }: { children: React.ReactNode }) {
         </div>
 
         {/* Page Content */}
-        <div className="">{children}</div>
+        <div className="w-full">{children}</div>
       </div>
     </div>
   );

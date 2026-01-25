@@ -73,7 +73,7 @@ export default function GeneDatabase() {
 
   return (
     <div className="flex-1 ml-16">
-      <main className="space-y-8 p-8 bg-background min-h-screen">
+      <main className="space-y-8 p-8 bg-background min-h-screen w-full">
         {/* stats */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="glass p-6 rounded-lg text-center">
@@ -94,7 +94,7 @@ export default function GeneDatabase() {
           </div>
         </div>
 
-        <div className="glass p-6 rounded-lg mb-8">
+        <div className="glass p-6 rounded-lg mb-8 w-full">
           <div className="relative mb-6">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
             <input

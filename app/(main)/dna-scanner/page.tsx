@@ -1,20 +1,21 @@
 "use client";
 
-import { Sidebar } from "@/components/sidebar";
-import { Header } from "@/components/header";
-import { Upload, FileText, Info, DownloadIcon } from "lucide-react";
-import { useState } from "react";
-import { parse_fasta } from "../../../api/fasta-actions";
+import { Sidebar } from "@/components/sidebar"
+import { Header } from "@/components/header"
+import { Upload, FileText, Info, DownloadIcon } from "lucide-react"
+import { useEffect, useState } from "react"
+import { parse_fasta, previouslyReadFastas } from "../../../api/fasta-actions"
 
 // shadcn
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { useAuth } from "@/contexts/AuthContext"
 
 export default function DNAScanner() {
+  const [activeTab, setActiveTab] = useState<"stats" | "mutations" | "sequence">("stats");
+
   const [fasta_file, set_fasta_file] = useState<File | undefined>(undefined);
-  const [activeTab, setActiveTab] = useState<
-    "stats" | "mutations" | "sequence"
-  >("stats");
+  const { user } = useAuth();
 
   const handleFileChange = async (
     event: React.ChangeEvent<HTMLInputElement>
@@ -35,7 +36,11 @@ export default function DNAScanner() {
     event.preventDefault();
     if (!fasta_file) return;
     await parse_fasta(fasta_file);
-  };
+  }
+
+  useEffect(() => {
+    previouslyReadFastas();
+  }, [user])
 
   return (
     <div className="flex">

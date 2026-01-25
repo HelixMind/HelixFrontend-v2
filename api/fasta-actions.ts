@@ -18,4 +18,18 @@ export async function parse_fasta(fasta_file: File) {
     console.log(response);
 
     return response;
+};
+
+export async function previouslyReadFastas() {
+    const response = await request<{
+        response: any
+    }>("/simulation/fastas", {
+        headers: {
+            "Content-Type": "application/json"
+        },
+    });
+
+    console.log(response);
+
+    return response;
 }

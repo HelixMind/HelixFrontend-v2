@@ -32,3 +32,8 @@ run the project
 ````bash
 pnpm run dev
 ```
+
+---
+
+c.h.imobinzenwata186@gmail.com
+Ch@1234567890
