@@ -62,7 +62,7 @@ export default function NotificationsPage() {
     <div className="flex-1 ml-16 pt-16">
     <Header title="Notifications" />
     <main className="p-8 bg-background min-h-screen">
-      <div className="max-w-7xl mx-auto">
+      <div className="  mx-auto">
 
         <div className="flex gap-2 mb-4">
           <Button onClick={markAllAsRead} disabled={unreadCount === 0}>

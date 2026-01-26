@@ -25,7 +25,7 @@ export default function AMRLayout({ children }: { children: React.ReactNode }) {
   ];
 
   return (
-    <div className="flex">
+    <div className="flex flex-1">
       <Sidebar />
 
       <div className="flex-1 pt-16">

@@ -106,7 +106,7 @@ export default function GeneDatabase() {
             />
           </div>
 
-          <div className="max-w-lg lg:max-w-7xl overflow-x-auto">
+          <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border">

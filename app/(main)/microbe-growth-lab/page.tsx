@@ -117,7 +117,7 @@ export default function MicrobeGrowthLab() {
   }
 
   return (
-    <div className="flex">
+    <div className="flex w-full">
       <Sidebar />
       <div className="flex-1 ml-16 pt-16">
         <Header title="Microbe Growth Lab" />

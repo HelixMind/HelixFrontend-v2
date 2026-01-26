@@ -85,7 +85,7 @@ export default function signupPage() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto container h-screen bg-background flex">
+    <div className="  mx-auto container h-screen bg-background flex">
       {/* Left Panel - Branding */}
       <div className="hidden lg:flex lg:w-1/2 flex-col justify-between p-12 border-r border-border">
         <div className="flex items-center gap-3">
