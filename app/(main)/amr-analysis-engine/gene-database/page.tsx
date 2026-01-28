@@ -10,7 +10,7 @@ interface AMRRecord {
   drugClass: string;
   mechanism: string;
   organism: string;
-  impact: number; // in percentage
+  impact: number;
 }
 
 const AMR_RECORDS: AMRRecord[] = [
@@ -73,99 +73,100 @@ export default function GeneDatabase() {
 
   return (
     <div className="flex-1 ml-16">
-      <main className="space-y-8 p-8 bg-background min-h-screen w-full">
-        {/* stats */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="glass p-6 rounded-lg text-center">
-            <p className="text-muted-foreground text-sm mb-2">Total Genes</p>
-            <p className="text-3xl font-bold ">2,847</p>
-          </div>
-          <div className="glass p-6 rounded-lg text-center">
-            <p className="text-muted-foreground text-sm mb-2">Organisms</p>
-            <p className="text-3xl font-bold ">456</p>
-          </div>
-          <div className="glass p-6 rounded-lg text-center">
-            <p className="text-muted-foreground text-sm mb-2">Drug Class</p>
-            <p className="text-3xl font-bold text-primary">128</p>
-          </div>
-          <div className="glass p-6 rounded-lg text-center">
-            <p className="text-muted-foreground text-sm mb-2">Last Updated</p>
-            <p className="text-sm font-mono text-primary">2024-01-12</p>
-          </div>
+      <main className="space-y-6 p-4 sm:p-6 lg:p-8 bg-background min-h-screen">
+
+        {/* Stats */}
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[
+            ["Total Genes", "2,847"],
+            ["Organisms", "456"],
+            ["Drug Class", "128"],
+            ["Last Updated", "2024-01-12"],
+          ].map(([title, value]) => (
+            <div key={title} className="glass p-4 sm:p-6 rounded-lg text-center">
+              <p className="text-muted-foreground text-xs sm:text-sm mb-1">
+                {title}
+              </p>
+              <p className="text-xl sm:text-3xl font-bold text-primary">
+                {value}
+              </p>
+            </div>
+          ))}
         </div>
 
-        <div className="glass p-6 rounded-lg mb-8 w-full">
-          <div className="relative mb-6">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+        {/* Search + Content */}
+        <div className="glass p-4 sm:p-6 rounded-lg w-full">
+
+          {/* Search */}
+          <div className="relative mb-4">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <input
               type="text"
               placeholder="Search genes, antibiotics, organisms..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-card border border-border rounded-lg pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30"
+              className="w-full bg-card border border-border rounded-lg pl-9 pr-4 py-2.5 text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30"
             />
           </div>
 
-          <div className="overflow-x-auto">
+          {/* ---------- DESKTOP TABLE ---------- */}
+          <div className="hidden lg:block overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border">
-                  <th className="text-left py-3 px-4 text-muted-foreground font-medium">
-                    ID
-                  </th>
-                  <th className="text-left py-3 px-4 text-muted-foreground font-medium">
-                    Gene
-                  </th>
-                  <th className="text-left py-3 px-4 text-muted-foreground font-medium">
-                    Antibiotic
-                  </th>
-                  <th className="text-left py-3 px-4 text-muted-foreground font-medium">
-                    Drug Class
-                  </th>
-                  <th className="text-left py-3 px-4 text-muted-foreground font-medium">
-                    Mechanism
-                  </th>
-                  <th className="text-left py-3 px-4 text-muted-foreground font-medium">
-                    Organism
-                  </th>
-                  <th className="text-left py-3 px-4 text-muted-foreground font-medium">
-                    Impact (%)
-                  </th>
+                  {["ID","Gene","Antibiotic","Drug Class","Mechanism","Organism","Impact (%)"].map((h) => (
+                    <th key={h} className="text-left py-3 px-4 text-muted-foreground font-medium">
+                      {h}
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
                 {filteredRecords.map((record) => (
-                  <tr
-                    key={record.id}
-                    className="border-b border-border/30 hover:bg-card/50 transition-colors cursor-pointer"
-                  >
-                    <td className="py-3 px-4 font-mono text-primary">
-                      {record.id}
-                    </td>
+                  <tr key={record.id} className="border-b border-border/30 hover:bg-card/50 transition">
+                    <td className="py-3 px-4 font-mono text-primary">{record.id}</td>
                     <td className="py-3 px-4 font-semibold">{record.gene}</td>
                     <td className="py-3 px-4">
                       <span className="px-3 py-1 rounded-full text-xs bg-accent/20 text-primary">
                         {record.antibiotic}
                       </span>
                     </td>
-                    <td className="py-3 px-4 text-muted-foreground">
-                      {record.drugClass}
-                    </td>
-                    <td className="py-3 px-4 text-muted-foreground">
-                      {record.mechanism}
-                    </td>
+                    <td className="py-3 px-4 text-muted-foreground">{record.drugClass}</td>
+                    <td className="py-3 px-4 text-muted-foreground">{record.mechanism}</td>
                     <td className="py-3 px-4">{record.organism}</td>
-                    <td className="py-3 px-4 font-semibold text-primary">
-                      {record.impact}%
-                    </td>
+                    <td className="py-3 px-4 font-semibold text-primary">{record.impact}%</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
 
+          {/* ---------- MOBILE CARDS ---------- */}
+          <div className="grid gap-4 lg:hidden">
+            {filteredRecords.map((r) => (
+              <div key={r.id} className="rounded-lg border border-border p-4 space-y-2 bg-card">
+                <div className="flex justify-between items-center">
+                  <p className="font-mono text-primary text-sm">{r.id}</p>
+                  <p className="font-semibold text-primary">{r.impact}%</p>
+                </div>
+
+                <p className="font-semibold text-lg">{r.gene}</p>
+
+                <span className="inline-block px-3 py-1 rounded-full text-xs bg-accent/20 text-primary">
+                  {r.antibiotic}
+                </span>
+
+                <div className="text-sm text-muted-foreground space-y-1 pt-2">
+                  <p><b>Organism:</b> {r.organism}</p>
+                  <p><b>Drug class:</b> {r.drugClass}</p>
+                  <p><b>Mechanism:</b> {r.mechanism}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
           {filteredRecords.length === 0 && (
-            <div className="text-center py-12">
+            <div className="text-center py-10">
               <p className="text-muted-foreground">
                 No records found matching your search.
               </p>

@@ -20,11 +20,13 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import Logo from "./ui/Logo";
+import { useAuth } from "@/contexts/AuthContext";
 
 export function Sidebar() {
   const pathname = usePathname();
   const [expanded, setExpanded] = useState(false);
   const [showLabels, setShowLabels] = useState(false);
+  const { user } = useAuth();
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
@@ -85,7 +87,7 @@ export function Sidebar() {
           </button>
         </div>
 
-        <div className="h-full flex flex-col justify-between">
+        <div className={cn("h-full flex flex-col justify-between", expanded ? "w-64" : "w-16")}>
           <nav
             className={cn(
               "border-t border-t-accent flex flex-col items-center justify-center gap-6 w-full px-4 pt-6 duration-150 ease-out transition-all",
@@ -143,16 +145,16 @@ export function Sidebar() {
             className={cn("w-full flex justify-center items-center gap-4", expanded && "px-4 justify-start")}
           >
             <div className="shrink-0 w-10 h-10 rounded-full bg-secondary flex items-center justify-center text-base font-display font-bold">
-              U
+              {user?.name.charAt(0).toUpperCase()}
             </div>
 
             {showLabels && (
-              <div>
+              <div className="truncate">
                 <h3 className="flex items-center gap-2 text-lg font-semibold truncate transition-all ease-out duration-150">
-                  <span className="text-sm truncate">John Doe</span>
+                  <span className="text-sm truncate">{user?.name ?? "Guest"}</span>
                 </h3>
                 <p className="text-muted-foreground flex items-center gap-2 truncate">
-                  <span className="text-xs truncate">johndoe@example.com</span>
+                  <span className="text-xs truncate">{user?.email ?? ""}</span>
                 </p>
               </div>
             )}

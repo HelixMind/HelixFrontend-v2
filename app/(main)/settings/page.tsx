@@ -4,6 +4,7 @@ import { Sidebar } from "@/components/sidebar";
 import { Header } from "@/components/header";
 import { Save } from "lucide-react";
 import { useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 
 // cn
 import { cn } from "@/lib/utils";
@@ -34,6 +35,8 @@ export default function Settings() {
     console.log("Settings saved:", settings);
   };
 
+  const {user} = useAuth();
+
   return (
     <div className="flex">
       <Sidebar />
@@ -57,17 +60,17 @@ export default function Settings() {
                     "shrink-0 w-16 h-16 rounded-full bg-secondary flex items-center justify-center text-2xl font-display font-bold"
                   )}
                 >
-                  U
+                  {user?.name.charAt(0).toUpperCase()}
                 </div>
 
                 {/* Name & Email */}
                 <div className="min-w-0">
                   <h3 className="flex items-center gap-2 text-lg font-semibold truncate">
-                    <span className="truncate">John Doe</span>
+                    <span className="truncate">{user?.name ?? "Guest"}</span>
                   </h3>
                   <p className="text-muted-foreground flex items-center gap-2 truncate">
                     <Mail className="w-4 h-4 shrink-0" />
-                    <span className="truncate">johndoe@example.com</span>
+                    <span className="truncate">{user?.email ?? ""}</span>
                   </p>
                 </div>
               </div>
@@ -79,7 +82,7 @@ export default function Settings() {
                     Full Name
                   </label>
                   <Input
-                    value="John Doe"
+                    value={user?.name ?? "Guest"}
                     readOnly
                     className="mt-1 truncate"
                   />
@@ -89,7 +92,7 @@ export default function Settings() {
                     Email Address
                   </label>
                   <Input
-                    value="johndoe@example.com"
+                    value={user?.email ?? ""}
                     readOnly
                     className="mt-1 truncate"
                   />
