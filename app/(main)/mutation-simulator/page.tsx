@@ -257,8 +257,8 @@ export default function MutationSimulator() {
                     <input
                       type="range"
                       min="0"
-                      max="10"
-                      step="0.1"
+                      max="0.001"
+                      step="0.0001"
                       value={params.substitutionRate}
                       className="w-full accent-primary"
                       onChange={(e) => {
