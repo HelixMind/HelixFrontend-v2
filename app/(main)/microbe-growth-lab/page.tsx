@@ -1,181 +1,884 @@
-"use client"
+"use client";
 
-import { Sidebar } from "@/components/sidebar"
-import { Header } from "@/components/header"
-import { Play, Pause, RotateCcw } from "lucide-react"
-import { useState, useEffect } from "react"
-import { StrainSelector } from "@/components/strain-selector"
-import { EnvironmentPanel } from "@/components/environment-panel"
-import { GrowthChart } from "@/components/growth-chart"
-import { StressMonitor } from "@/components/stress-monitor"
-import { AdaptationLog } from "@/components/adaptation-log"
+import React, { useState, useEffect } from "react";
+import {
+  Play,
+  Pause,
+  RotateCcw,
+  Download,
+  Microscope,
+  Plus,
+  FileText,
+  Thermometer,
+  Droplet,
+  Leaf,
+  Wind,
+  Pill,
+  AlertTriangle,
+  Activity,
+  Clock,
+  LineChart as LineChartIcon,
+} from "lucide-react";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from "recharts";
 
-interface SimulationState {
-  temperature: number
-  pH: number
-  nutrientDensity: number
-  oxygenLevels: number
-  antibioticActive: boolean
-  antibioticConcentration: number
+// components
+import { Sidebar } from "@/components/sidebar";
+import { Header } from "@/components/header";
+import {Button} from "@/components/ui/button";
+
+// ────────────────────────────────────────────────
+//  TYPES
+// ────────────────────────────────────────────────
+interface Strain {
+  name: string;
+  description: string;
+  growthRate: number;
+  tempOptimal: number;
+  resistance: number;
 }
 
-export default function MicrobeGrowthLab() {
-  const [selectedStrain, setSelectedStrain] = useState("ecoli")
-  const [isRunning, setIsRunning] = useState(false)
-  const [simulationState, setSimulationState] = useState<SimulationState>({
+interface GenomeInfo {
+  header: string;
+  length: number;
+  gcContent: string;
+  resistanceGenes: number;
+  estimatedGrowthRate: number;
+  estimatedResistance: number;
+}
+
+interface SimulationState {
+  population: number;
+  timeStep: number;
+  resistanceLevel: number;
+  growthHistory: { time: number; population: number }[];
+  adaptationLog: string[];
+  stressLevels: {
+    temperature: number;
+    ph: number;
+    nutrients: number;
+    oxygen: number;
+  };
+  resistance: number;
+  environment: {
+    temperature: number;
+    pH: number;
+    nutrients: number;
+    oxygen: number;
+    antibioticConc: number;
+  };
+}
+
+// ────────────────────────────────────────────────
+//  CONSTANTS
+// ────────────────────────────────────────────────
+const CARRYING_CAPACITY = 10000;
+const MAX_GROWTH_RATE = 0.35;
+const K_S = 20;
+const BASE_MUTATION_RATE = 0.005;
+const SELECTION_COEFFICIENT = 0.1;
+
+const STRAINS: Record<string, Strain> = {
+  ecoli: {
+    name: "E. coli",
+    description: "Fast-growing, commonly studied in labs",
+    growthRate: 0.35,
+    tempOptimal: 37,
+    resistance: 0.0,
+  },
+  bacillus: {
+    name: "Bacillus subtilis",
+    description: "Gram-positive, produces spores",
+    growthRate: 0.25,
+    tempOptimal: 37,
+    resistance: 0.05,
+  },
+  pseudomonas: {
+    name: "Pseudomonas aeruginosa",
+    description: "Opportunistic pathogen, antibiotic-resistant",
+    growthRate: 0.2,
+    tempOptimal: 37,
+    resistance: 0.4,
+  },
+  thermophile: {
+    name: "Thermus aquaticus",
+    description: "Extreme thermophile, heat-stable",
+    growthRate: 0.28,
+    tempOptimal: 70,
+    resistance: 0.1,
+  },
+  acidophile: {
+    name: "Acidobacteria",
+    description: "Acid-loving bacterium",
+    growthRate: 0.18,
+    tempOptimal: 37,
+    resistance: 0.15,
+  },
+};
+
+// ────────────────────────────────────────────────
+//  SIMULATION CLASS
+// ────────────────────────────────────────────────
+class MicrobeSimulation {
+  population: number = 1000;
+  timeStep: number = 0;
+  avgResistance: number = 0.0;
+  adaptationLog: string[] = ["Culture inoculated."];
+  growthHistory: { time: number; population: number }[] = [];
+
+  env = {
     temperature: 37,
-    pH: 7,
-    nutrientDensity: 100,
-    oxygenLevels: 21,
-    antibioticActive: false,
-    antibioticConcentration: 0,
-  })
-  const [timeSteps, setTimeSteps] = useState(0)
-  const [populationData, setPopulationData] = useState<Array<{ time: number; population: number }>>([
-    { time: 0, population: 1000 },
-  ])
-  const [mutations, setMutations] = useState<Array<{ time: number; fitnessBoot: number }>>([])
-  const [stressLevels, setStressLevels] = useState({
-    temperature: 0,
-    pH: 0,
-    nutrients: 0,
-    oxygen: 0,
-  })
+    pH: 7.0,
+    nutrients: 100,
+    oxygen: 21,
+    antibioticConc: 0,
+  };
 
+  reset() {
+    this.population = 1000;
+    this.timeStep = 0;
+    this.avgResistance = 0.0;
+    this.adaptationLog = ["Culture inoculated."];
+    this.growthHistory = [];
+    this.env = {
+      temperature: 37,
+      pH: 7.0,
+      nutrients: 100,
+      oxygen: 21,
+      antibioticConc: 0,
+    };
+  }
+
+  updateEnvironment(
+    updates: Partial<typeof this.env> & { antibioticOn?: boolean }
+  ) {
+    if (updates.antibioticOn !== undefined) {
+      updates.antibioticConc = updates.antibioticOn ? 50 : 0;
+      delete updates.antibioticOn;
+    }
+    this.env = { ...this.env, ...updates };
+  }
+
+  getTemperatureCoeff(): number {
+    const T = this.env.temperature;
+    const T_opt = 37;
+    const T_min = 10;
+    const T_max = 46;
+    if (T <= T_min || T >= T_max) return 0;
+    const sigma = 5;
+    return Math.exp(-0.5 * ((T - T_opt) / sigma) ** 2);
+  }
+
+  getPHCoeff(): number {
+    const pH = this.env.pH;
+    const pH_opt = 7.0;
+    const pH_width = 2.5;
+    const coeff = 1 - ((pH - pH_opt) / pH_width) ** 2;
+    return Math.max(0, coeff);
+  }
+
+  getNutrientCoeff(): number {
+    const S = this.env.nutrients;
+    if (S <= 0) return 0;
+    return S / (K_S + S);
+  }
+
+  getKillRate(): number {
+    const dose = this.env.antibioticConc;
+    if (dose <= 0) return 0;
+    const MIC = 10 + this.avgResistance * 90;
+    const n = 2;
+    const efficacy = dose ** n / (MIC ** n + dose ** n);
+    return 0.4 * efficacy;
+  }
+
+  tick(): SimulationState {
+    this.timeStep += 1;
+
+    const tempK = this.getTemperatureCoeff();
+    const phK = this.getPHCoeff();
+    const nutrientK = this.getNutrientCoeff();
+    const oxygenK = this.env.oxygen > 5 ? 1 : 0.1;
+
+    const currentGrowthRate =
+      MAX_GROWTH_RATE * tempK * phK * nutrientK * oxygenK;
+    const logisticFactor = 1 - this.population / CARRYING_CAPACITY;
+    const growthAmount = this.population * currentGrowthRate * logisticFactor;
+
+    const antibioticKillRate = this.getKillRate();
+    const deathAmount = this.population * antibioticKillRate;
+
+    if (antibioticKillRate > 0.01 && this.population > 0) {
+      const selectionPressure = antibioticKillRate * SELECTION_COEFFICIENT;
+      this.avgResistance = Math.min(
+        1.0,
+        this.avgResistance + selectionPressure
+      );
+      if (Math.random() < 0.1) {
+        this.adaptationLog.push(
+          `Step ${this.timeStep}: Selection → Resistance ${(
+            this.avgResistance * 100
+          ).toFixed(1)}%`
+        );
+      }
+    } else if (this.avgResistance > 0) {
+      this.avgResistance = Math.max(0, this.avgResistance - 0.001);
+    }
+
+    const stress = 1 - tempK * phK;
+    const currentMutationChance = BASE_MUTATION_RATE * (1 + stress * 5);
+
+    if (Math.random() < currentMutationChance) {
+      this.avgResistance = Math.min(1.0, this.avgResistance + 0.01);
+      this.adaptationLog.push(`Step ${this.timeStep}: Mutation detected.`);
+    }
+
+    let nextPop = this.population + growthAmount - deathAmount;
+    const consumption = growthAmount > 0 ? growthAmount * 0.05 : 0;
+    this.env.nutrients = Math.max(0, this.env.nutrients - consumption);
+
+    this.population = Math.max(0, Math.round(nextPop));
+
+    if (this.adaptationLog.length > 10) this.adaptationLog.shift();
+
+    this.growthHistory.push({
+      time: this.timeStep,
+      population: this.population,
+    });
+
+    return this.getState();
+  }
+
+  getState(): SimulationState {
+    return {
+      population: this.population,
+      timeStep: this.timeStep,
+      resistanceLevel: Math.round(this.avgResistance * 100),
+      growthHistory: this.growthHistory,
+      adaptationLog: this.adaptationLog,
+      stressLevels: {
+        temperature: 1 - this.getTemperatureCoeff(),
+        ph: 1 - this.getPHCoeff(),
+        nutrients: 1 - this.getNutrientCoeff(),
+        oxygen: Math.abs(this.env.oxygen - 21) / 21,
+      },
+      resistance: this.avgResistance,
+      environment: this.env,
+    };
+  }
+}
+
+// ────────────────────────────────────────────────
+//  MAIN COMPONENT
+// ────────────────────────────────────────────────
+export default function MicrobeGrowthLab() {
+  const [sim] = useState(() => new MicrobeSimulation());
+  const [isRunning, setIsRunning] = useState(false);
+  const [state, setState] = useState<SimulationState>(sim.getState());
+  const [selectedStrain, setSelectedStrain] = useState("ecoli");
+  const [showCustomStrain, setShowCustomStrain] = useState(false);
+  const [customStrain, setCustomStrain] = useState<Strain>({
+    name: "Custom Strain",
+    description: "User-defined strain",
+    growthRate: 0.3,
+    tempOptimal: 37,
+    resistance: 0.0,
+  });
+  const [genomeInfo, setGenomeInfo] = useState<GenomeInfo | null>(null);
+
+  const [temperature, setTemperature] = useState(37);
+  const [pH, setPH] = useState(7.0);
+  const [nutrients, setNutrients] = useState(100);
+  const [oxygen, setOxygen] = useState(21);
+  const [antibioticOn, setAntibioticOn] = useState(false);
+
+  // Sync environment changes
   useEffect(() => {
-    if (!isRunning) return
+    sim.updateEnvironment({ temperature, pH, nutrients, oxygen, antibioticOn });
+  }, [temperature, pH, nutrients, oxygen, antibioticOn, sim]);
 
+  // Simulation loop
+  useEffect(() => {
+    if (!isRunning) return;
     const interval = setInterval(() => {
-      setTimeSteps((prev) => {
-        const newTime = prev + 1
-        if (newTime > 100) {
-          setIsRunning(false)
-          return prev
+      const newState = sim.tick();
+      setState(newState);
+    }, 300);
+    return () => clearInterval(interval);
+  }, [isRunning, sim]);
+
+  const analyzeFastaGenome = (fastaText: string): GenomeInfo | null => {
+    const lines = fastaText.split("\n");
+    let header = "";
+    let sequence = "";
+
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (trimmed.startsWith(">")) {
+        header = trimmed.substring(1);
+      } else if (trimmed.length > 0) {
+        sequence += trimmed;
+      }
+    }
+
+    if (!sequence) return null;
+
+    const genomeLength = sequence.length;
+    const gcContent =
+      ((sequence.match(/[GC]/gi) || []).length / genomeLength) * 100;
+
+    const resistancePatterns = ["gyrA", "rpoB", "katG", "efflux", "beta"];
+    let resistanceGeneCount = 0;
+    for (const pattern of resistancePatterns) {
+      resistanceGeneCount += (
+        header.toLowerCase().match(new RegExp(pattern, "g")) || []
+      ).length;
+    }
+
+    const baseGrowthRate = 0.35 - (genomeLength > 5000000 ? 0.05 : 0);
+    const baseResistance = Math.min(
+      0.8,
+      resistanceGeneCount * 0.15 + (gcContent / 100) * 0.1
+    );
+
+    return {
+      header,
+      length: genomeLength,
+      gcContent: gcContent.toFixed(1),
+      resistanceGenes: resistanceGeneCount,
+      estimatedGrowthRate: Math.max(0.1, baseGrowthRate),
+      estimatedResistance: baseResistance,
+    };
+  };
+
+  const handleFastaUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const text = event.target?.result as string;
+        const info = analyzeFastaGenome(text);
+
+        if (info) {
+          setGenomeInfo(info);
+          setCustomStrain({
+            name: info.header || "FASTA Strain",
+            description: `Genome: ${info.length} bp | GC: ${info.gcContent}% | Resistance Genes: ${info.resistanceGenes}`,
+            growthRate: info.estimatedGrowthRate,
+            tempOptimal: 37,
+            resistance: info.estimatedResistance,
+          });
+          setShowCustomStrain(true);
+          setSelectedStrain("custom");
+        } else {
+          alert("No valid sequence found in FASTA file");
         }
-        return newTime
-      })
-    }, 200)
+      } catch (err) {
+        alert("Error reading FASTA file");
+      }
+    };
+    reader.onerror = () => alert("Error reading file");
+    reader.readAsText(file);
+  };
 
-    return () => clearInterval(interval)
-  }, [isRunning])
-
-  useEffect(() => {
-    if (timeSteps === 0) return
-
-    const strainData = {
-      ecoli: { optimalTemp: 37, optimalPH: 7, baseGrowthRate: 0.5, stressSensitivity: 0.02 },
-      bsubtilis: { optimalTemp: 37, optimalPH: 7.2, baseGrowthRate: 0.4, stressSensitivity: 0.015 },
-      mtuberculosis: { optimalTemp: 37, optimalPH: 6.8, baseGrowthRate: 0.15, stressSensitivity: 0.08 },
+  const handleStrainChange = (key: string) => {
+    if (key === "custom") {
+      setShowCustomStrain(true);
+      setSelectedStrain("custom");
+    } else {
+      setShowCustomStrain(false);
+      setSelectedStrain(key);
+      const strain = STRAINS[key];
+      setTemperature(strain.tempOptimal);
     }
-
-    const currentStrain = strainData[selectedStrain as keyof typeof strainData]
-    let growthRate = currentStrain.baseGrowthRate
-
-    // Calculate stress factors
-    const tempStress = Math.abs(simulationState.temperature - currentStrain.optimalTemp) * 0.1
-    const phStress = Math.abs(simulationState.pH - currentStrain.optimalPH) * 0.15
-    const nutrientStress = (100 - simulationState.nutrientDensity) * 0.005
-    const oxygenStress = Math.abs(simulationState.oxygenLevels - 21) * 0.01
-
-    const totalStress = tempStress + phStress + nutrientStress + oxygenStress
-    growthRate *= 1 - totalStress * currentStrain.stressSensitivity
-
-    // Apply antibiotic effect
-    let populationMultiplier = 1
-    if (simulationState.antibioticActive) {
-      populationMultiplier = Math.max(0.3, 1 - simulationState.antibioticConcentration * 0.008)
-    }
-
-    // Calculate new population
-    const lastPopulation = populationData[populationData.length - 1].population
-    const newPopulation = lastPopulation * (1 + growthRate * populationMultiplier)
-
-    // Update population data
-    setPopulationData((prev) => [...prev, { time: timeSteps, population: Math.max(0, newPopulation) }])
-
-    // Simulate mutation detection at specific intervals
-    if (timeSteps % 25 === 0 && timeSteps > 0 && Math.random() > 0.3) {
-      const fitnessBoot = 1 + mutations.length * 0.15
-      setMutations((prev) => [...prev, { time: timeSteps, fitnessBoot }])
-    }
-
-    // Update stress levels (0-100)
-    setStressLevels({
-      temperature: Math.min(100, tempStress * 15),
-      pH: Math.min(100, phStress * 12),
-      nutrients: Math.min(100, nutrientStress * 200),
-      oxygen: Math.min(100, oxygenStress * 25),
-    })
-  }, [timeSteps, simulationState, selectedStrain, mutations, populationData])
+  };
 
   const handleReset = () => {
-    setIsRunning(false)
-    setTimeSteps(0)
-    setPopulationData([{ time: 0, population: 1000 }])
-    setMutations([])
-    setStressLevels({ temperature: 0, pH: 0, nutrients: 0, oxygen: 0 })
-  }
+    setIsRunning(false);
+    sim.reset();
+    const strain = showCustomStrain ? customStrain : STRAINS[selectedStrain];
+    sim.avgResistance = strain.resistance;
+    setState(sim.getState());
+    setTemperature(strain.tempOptimal);
+    setPH(7.0);
+    setNutrients(100);
+    setOxygen(21);
+    setAntibioticOn(false);
+  };
+
+  const handleExport = () => {
+    if (state.growthHistory.length === 0) {
+      alert("Run simulation first to export data");
+      return;
+    }
+
+    const csv = [
+      "Time,Population,Resistance(%)",
+      ...state.growthHistory.map(
+        (d) => `${d.time},${d.population},${state.resistanceLevel}`
+      ),
+    ].join("\n");
+
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "microbe_growth_data.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const getStressClass = (level: number): string => {
+    if (level < 0.3) return "bg-neutral-700 text-neutral-300";
+    if (level < 0.7) return "bg-neutral-600 text-neutral-200";
+    return "bg-neutral-500 text-white";
+  };
+
+  const currentStrain = showCustomStrain
+    ? customStrain
+    : STRAINS[selectedStrain];
 
   return (
     <div className="flex w-full">
       <Sidebar />
       <div className="flex-1 ml-16 pt-16">
         <Header title="Microbe Growth Lab" />
-
-        <main className="p-8 bg-background min-h-screen">
+        <div className="min-h-screen bg-black text-neutral-200 p-6">
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
-            {/* Strain Selector */}
-            <StrainSelector selectedStrain={selectedStrain} onStrainChange={setSelectedStrain} disabled={isRunning} />
+            {/* Strain Selection */}
+            <div className="bg-neutral-950 border border-neutral-800 rounded-lg p-6">
+              <h2 className="text-lg font-semibold mb-5 flex items-center gap-2">
+                <Microscope className="h-5 w-5" />
+                Strain
+              </h2>
 
-            {/* Quick Controls */}
-            <div className="lg:col-span-3 glass p-6 rounded-lg">
-              <h3 className="text-lg font-semibold mb-4 ">Simulation Controls</h3>
-              <div className="flex gap-3 items-end">
-                <button
-                  onClick={() => setIsRunning(!isRunning)}
-                  className="flex-1 bg-primary hover:bg-primary/80 text-primary-foreground font-semibold py-3 rounded-lg transition-colors flex items-center justify-center gap-2 "
-                >
-                  {isRunning ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-                  {isRunning ? "Pause" : "Start"} Simulation
-                </button>
-                <button
-                  onClick={handleReset}
-                  className="flex-1 bg-card hover:bg-card/80 text-foreground font-semibold py-3 rounded-lg transition-colors flex items-center justify-center gap-2"
-                >
-                  <RotateCcw className="w-4 h-4" />
-                  Reset
-                </button>
-                <div className="text-center">
-                  <p className="text-sm text-muted-foreground">Time Steps</p>
-                  <p className="text-2xl font-bold ">{timeSteps}</p>
+              <div className="space-y-2 mb-6">
+                {Object.entries(STRAINS).map(([key, strain]) => (
+                  <button
+                    key={key}
+                    onClick={() => handleStrainChange(key)}
+                    className={`w-full p-3 rounded-md text-left text-sm border transition-colors ${
+                      selectedStrain === key && !showCustomStrain
+                        ? "bg-neutral-800 border-neutral-600"
+                        : "bg-neutral-900 border-neutral-800 hover:border-neutral-700"
+                    }`}
+                  >
+                    <div className="font-medium">{strain.name}</div>
+                    <div className="text-xs text-neutral-500 mt-0.5">
+                      {strain.description}
+                    </div>
+                    <div className="text-xs text-neutral-600 mt-1">
+                      Growth: {(strain.growthRate * 100).toFixed(0)}% • Resist:{" "}
+                      {(strain.resistance * 100).toFixed(0)}%
+                    </div>
+                  </button>
+                ))}
+              </div>
+
+              <button
+                onClick={() => handleStrainChange("custom")}
+                className={`w-full p-3 rounded-md text-left text-sm border transition-colors ${
+                  showCustomStrain
+                    ? "bg-neutral-800 border-neutral-600"
+                    : "bg-neutral-900 border-neutral-800 hover:border-neutral-700"
+                }`}
+              >
+                <div className="font-medium flex items-center gap-2">
+                  <Plus className="h-4 w-4" />
+                  Custom Strain
+                </div>
+                <div className="text-xs text-neutral-500 mt-0.5">
+                  User-defined bacteria
+                </div>
+              </button>
+
+              <div className="mt-5 pt-4 border-t border-neutral-800">
+                <label className="text-xs font-medium text-neutral-500 block mb-2 flex items-center gap-2">
+                  <FileText className="h-4 w-4" />
+                  Upload FASTA
+                </label>
+                <input
+                  type="file"
+                  accept=".fasta,.fa,.fna,.txt"
+                  onChange={handleFastaUpload}
+                  className="w-full text-xs text-neutral-400 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-xs file:bg-neutral-800 file:text-neutral-300 hover:file:bg-neutral-700 cursor-pointer"
+                />
+                <p className="text-xs text-neutral-600 mt-2">
+                  Analyze genome from FASTA header
+                </p>
+              </div>
+            </div>
+
+            {/* ───────────── Custom Strain ───────────── */}
+            {showCustomStrain && (
+              <div className="bg-neutral-950 border border-neutral-800 rounded-lg p-6">
+                <h2 className="text-lg font-semibold mb-5 flex items-center gap-2">
+                  <Plus className="h-5 w-5" />
+                  Custom Strain
+                </h2>
+
+                {genomeInfo && (
+                  <div className="bg-neutral-900 border border-neutral-800 rounded p-4 mb-6 text-sm">
+                    <p className="text-neutral-400 mb-3 flex items-center gap-2">
+                      <Activity className="h-4 w-4" />
+                      Genome Analysis
+                    </p>
+                    <div className="grid grid-cols-2 gap-3 text-neutral-300">
+                      <div>Size: {genomeInfo.length.toLocaleString()} bp</div>
+                      <div>GC: {genomeInfo.gcContent}%</div>
+                      <div>
+                        Resistance markers: {genomeInfo.resistanceGenes}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="space-y-5">
+                  <div>
+                    <label className="block text-sm font-medium mb-1.5">
+                      Name
+                    </label>
+                    <input
+                      type="text"
+                      value={customStrain.name}
+                      onChange={(e) =>
+                        setCustomStrain({
+                          ...customStrain,
+                          name: e.target.value,
+                        })
+                      }
+                      className="w-full bg-neutral-900 border border-neutral-800 rounded px-3 py-2 text-sm focus:outline-none focus:border-neutral-600"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-1.5">
+                      Description
+                    </label>
+                    <input
+                      type="text"
+                      value={customStrain.description}
+                      onChange={(e) =>
+                        setCustomStrain({
+                          ...customStrain,
+                          description: e.target.value,
+                        })
+                      }
+                      className="w-full bg-neutral-900 border border-neutral-800 rounded px-3 py-2 text-sm focus:outline-none focus:border-neutral-600"
+                    />
+                  </div>
+
+                  {/* Growth Rate Slider */}
+                  <div>
+                    <div className="flex justify-between text-sm mb-1.5">
+                      <span>Growth Rate</span>
+                      <span>{(customStrain.growthRate * 100).toFixed(1)}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0.05"
+                      max="0.5"
+                      step="0.01"
+                      value={customStrain.growthRate}
+                      onChange={(e) =>
+                        setCustomStrain({
+                          ...customStrain,
+                          growthRate: Number(e.target.value),
+                        })
+                      }
+                      className="w-full h-1.5 bg-neutral-800 rounded-full appearance-none cursor-pointer accent-neutral-500"
+                    />
+                  </div>
+
+                  {/* Temp Slider */}
+                  <div>
+                    <div className="flex justify-between text-sm mb-1.5">
+                      <span>Optimal Temp</span>
+                      <span>{customStrain.tempOptimal}°C</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="10"
+                      max="80"
+                      value={customStrain.tempOptimal}
+                      onChange={(e) =>
+                        setCustomStrain({
+                          ...customStrain,
+                          tempOptimal: Number(e.target.value),
+                        })
+                      }
+                      className="w-full h-1.5 bg-neutral-800 rounded-full appearance-none cursor-pointer accent-neutral-500"
+                    />
+                  </div>
+
+                  {/* Resistance Slider */}
+                  <div>
+                    <div className="flex justify-between text-sm mb-1.5">
+                      <span>Resistance</span>
+                      <span>{(customStrain.resistance * 100).toFixed(0)}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="1"
+                      step="0.01"
+                      value={customStrain.resistance}
+                      onChange={(e) =>
+                        setCustomStrain({
+                          ...customStrain,
+                          resistance: Number(e.target.value),
+                        })
+                      }
+                      className="w-full h-1.5 bg-neutral-800 rounded-full appearance-none cursor-pointer accent-neutral-500"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ───────────── Environment ───────────── */}
+            <div className="bg-neutral-950 border border-neutral-800 rounded-lg p-6">
+              <h2 className="text-lg font-semibold mb-5 flex items-center gap-2">
+                <Thermometer className="h-5 w-5" />
+                Environment
+              </h2>
+
+              <div className="space-y-6">
+                {/* Temperature */}
+                <div>
+                  <div className="flex justify-between text-sm mb-1.5">
+                    <span>Temperature</span>
+                    <span>{temperature}°C</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="10"
+                    max="46"
+                    value={temperature}
+                    onChange={(e) => setTemperature(Number(e.target.value))}
+                    className="w-full h-1.5 bg-neutral-800 rounded-full appearance-none cursor-pointer accent-neutral-500"
+                  />
+                </div>
+
+                {/* pH */}
+                <div>
+                  <div className="flex justify-between text-sm mb-1.5">
+                    <span>pH</span>
+                    <span>{pH.toFixed(1)}</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="5"
+                    max="9"
+                    step="0.1"
+                    value={pH}
+                    onChange={(e) => setPH(Number(e.target.value))}
+                    className="w-full h-1.5 bg-neutral-800 rounded-full appearance-none cursor-pointer accent-neutral-500"
+                  />
+                </div>
+
+                {/* Nutrients */}
+                <div>
+                  <div className="flex justify-between text-sm mb-1.5">
+                    <span>Nutrients</span>
+                    <span>{Math.round(nutrients)}%</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={nutrients}
+                    onChange={(e) => setNutrients(Number(e.target.value))}
+                    className="w-full h-1.5 bg-neutral-800 rounded-full appearance-none cursor-pointer accent-neutral-500"
+                  />
+                </div>
+
+                {/* Oxygen */}
+                <div>
+                  <div className="flex justify-between text-sm mb-1.5">
+                    <span>Oxygen</span>
+                    <span>{oxygen}%</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={oxygen}
+                    onChange={(e) => setOxygen(Number(e.target.value))}
+                    className="w-full h-1.5 bg-neutral-800 rounded-full appearance-none cursor-pointer accent-neutral-500"
+                  />
+                </div>
+
+                {/* Antibiotic */}
+                <label className="flex items-center gap-3 cursor-pointer pt-2 border-t border-neutral-800">
+                  <input
+                    type="checkbox"
+                    checked={antibioticOn}
+                    onChange={(e) => setAntibioticOn(e.target.checked)}
+                    className="h-4 w-4 rounded border-neutral-700 bg-neutral-900 accent-neutral-500"
+                  />
+                  <div className="flex items-center gap-2 text-sm">
+                    <Pill className="h-4 w-4" />
+                    Antibiotic {antibioticOn ? "(50 µg/mL)" : ""}
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            {/* ───────────── Stress Monitor ───────────── */}
+            <div className="bg-neutral-950 border border-neutral-800 rounded-lg p-6">
+              <h2 className="text-lg font-semibold mb-5 flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5" />
+                Stress Monitor
+              </h2>
+
+              <div className="space-y-4">
+                {Object.entries(state.stressLevels).map(([key, level]) => (
+                  <div key={key}>
+                    <div className="flex justify-between text-sm mb-1.5 capitalize">
+                      <span>{key}</span>
+                      <span>{Math.round(level * 100)}%</span>
+                    </div>
+                    <div className="h-2 bg-neutral-800 rounded-full overflow-hidden">
+                      <div
+                        className={`h-full transition-all ${getStressClass(
+                          level
+                        )}`}
+                        style={{ width: `${Math.min(100, level * 100)}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-8 pt-6 border-t border-neutral-800">
+                <p className="text-sm text-neutral-500 mb-1">
+                  Resistance Level
+                </p>
+                <p className="text-4xl font-bold">{state.resistanceLevel}%</p>
+              </div>
+            </div>
+
+            {/* ───────────── Controls ───────────── */}
+            <div className="bg-neutral-950 border border-neutral-800 rounded-lg p-6">
+              <h2 className="text-lg font-semibold mb-5 flex items-center gap-2">
+                <Activity className="h-5 w-5" />
+                Simulation
+              </h2>
+
+              <div className="space-y-4">
+                <div>
+                  <p className="text-sm text-neutral-500">Time Steps</p>
+                  <p className="text-2xl font-bold">{state.timeStep}</p>
+                </div>
+
+                <div>
+                  <p className="text-sm text-neutral-500">Population</p>
+                  <p className="text-2xl font-bold">
+                    {state.population.toLocaleString()}
+                  </p>
+                </div>
+
+                <div className="pt-4 space-y-3 border-t border-neutral-800">
+                  <button
+                    onClick={() => setIsRunning(!isRunning)}
+                    className="w-full bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-neutral-200 font-medium py-2.5 rounded-md flex items-center justify-center gap-2 transition-colors"
+                  >
+                    {isRunning ? (
+                      <Pause className="h-5 w-5" />
+                    ) : (
+                      <Play className="h-5 w-5" />
+                    )}
+                    {isRunning ? "Pause" : "Start"}
+                  </button>
+
+                  <button
+                    onClick={handleReset}
+                    className="w-full bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-neutral-300 font-medium py-2.5 rounded-md flex items-center justify-center gap-2 transition-colors"
+                  >
+                    <RotateCcw className="h-5 w-5" />
+                    Reset
+                  </button>
+
+                  <button
+                    onClick={handleExport}
+                    className="w-full bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-neutral-300 font-medium py-2.5 rounded-md flex items-center justify-center gap-2 transition-colors"
+                  >
+                    <Download className="h-5 w-5" />
+                    Export CSV
+                  </button>
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-            {/* Main Growth Chart */}
-            <div className="lg:col-span-2.5">
-              <GrowthChart data={populationData} antibioticActive={simulationState.antibioticActive} />
-            </div>
+          {/* Chart */}
+          <div className="bg-neutral-950 border border-neutral-800 rounded-lg p-6 mb-8">
+            <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+              <LineChartIcon className="h-5 w-5" />
+              Population Growth
+            </h2>
 
-            {/* Stress Monitor */}
-            <div className="lg:col-span-1.5">
-              <StressMonitor stressLevels={stressLevels} />
-            </div>
+            {state.growthHistory.length > 0 ? (
+              <div className="h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={state.growthHistory}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+                    <XAxis dataKey="time" stroke="#4b5563" />
+                    <YAxis stroke="#4b5563" />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "#0f172a",
+                        border: "1px solid #334155",
+                        color: "#e2e8f0",
+                      }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="population"
+                      stroke="#6b7280"
+                      strokeWidth={2}
+                      dot={false}
+                      isAnimationActive={false}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <div className="h-80 flex items-center justify-center text-neutral-600">
+                Start the simulation to see population growth
+              </div>
+            )}
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-            {/* Environment Controls */}
-            <EnvironmentPanel state={simulationState} onChange={setSimulationState} disabled={isRunning} />
-
-            {/* Adaptation Log */}
-            <div className="lg:col-span-3">
-              <AdaptationLog mutations={mutations} />
+          {/* Log */}
+          <div className="bg-neutral-950 border border-neutral-800 rounded-lg p-6">
+            <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+              <Clock className="h-5 w-5" />
+              Adaptation Log
+            </h2>
+            <div className="bg-black rounded p-4 h-48 overflow-y-auto text-sm font-mono text-neutral-400 space-y-1 border border-neutral-900">
+              {state.adaptationLog.length === 0 ? (
+                <p className="text-neutral-600">Simulation not started yet.</p>
+              ) : (
+                state.adaptationLog.map((entry, i) => (
+                  <div key={i}>{entry}</div>
+                ))
+              )}
             </div>
           </div>
-        </main>
+        </div>
       </div>
     </div>
-  )
+  );
 }
