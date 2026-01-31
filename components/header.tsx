@@ -46,7 +46,7 @@ export function Header({ title }: { title: string }) {
         {/* Profile dropdown */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="p-2 hover:bg-card rounded-lg transition-colors">
+            <button className="p-2 hover:bg-card rounded-lg transition-colors cursor-pointer">
               <User className="w-5 h-5 text-muted-foreground hover:text-foreground" />
             </button>
           </DropdownMenuTrigger>
