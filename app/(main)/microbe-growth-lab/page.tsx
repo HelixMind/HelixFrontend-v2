@@ -33,7 +33,7 @@ import {
 // components
 import { Sidebar } from "@/components/sidebar";
 import { Header } from "@/components/header";
-import {Button} from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 
 // ────────────────────────────────────────────────
 //  TYPES
@@ -263,7 +263,7 @@ class MicrobeSimulation {
       timeStep: this.timeStep,
       resistanceLevel: Math.round(this.avgResistance * 100),
       growthHistory: this.growthHistory,
-      adaptationLog: this.adaptationLog,
+      adaptationLog: [...this.adaptationLog],
       stressLevels: {
         temperature: 1 - this.getTemperatureCoeff(),
         ph: 1 - this.getPHCoeff(),
@@ -293,6 +293,7 @@ export default function MicrobeGrowthLab() {
     resistance: 0.0,
   });
   const [genomeInfo, setGenomeInfo] = useState<GenomeInfo | null>(null);
+  const [chartSize, setChartSize] = useState<"99%" | "100%">("99%");
 
   const [temperature, setTemperature] = useState(37);
   const [pH, setPH] = useState(7.0);
@@ -304,6 +305,17 @@ export default function MicrobeGrowthLab() {
   useEffect(() => {
     sim.updateEnvironment({ temperature, pH, nutrients, oxygen, antibioticOn });
   }, [temperature, pH, nutrients, oxygen, antibioticOn, sim]);
+
+  // Chart size oscillation effect when running
+  useEffect(() => {
+    if (!isRunning) return;
+    
+    const interval = setInterval(() => {
+      setChartSize(prev => prev === "99%" ? "100%" : "99%");
+    }, 1000); // Toggle every 3 seconds
+    
+    return () => clearInterval(interval);
+  }, [isRunning]);
 
   // Simulation loop
   useEffect(() => {
@@ -414,6 +426,15 @@ export default function MicrobeGrowthLab() {
     setNutrients(100);
     setOxygen(21);
     setAntibioticOn(false);
+    setChartSize("99%");
+  };
+
+  const handleStartPause = () => {
+    if (!isRunning) {
+      // Starting simulation
+      setChartSize("99%");
+    }
+    setIsRunning(!isRunning);
   };
 
   const handleExport = () => {
@@ -791,7 +812,7 @@ export default function MicrobeGrowthLab() {
 
                 <div className="pt-4 space-y-3 border-t border-neutral-800">
                   <button
-                    onClick={() => setIsRunning(!isRunning)}
+                    onClick={handleStartPause}
                     className="w-full bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-neutral-200 font-medium py-2.5 rounded-md flex items-center justify-center gap-2 transition-colors"
                   >
                     {isRunning ? (
@@ -831,7 +852,7 @@ export default function MicrobeGrowthLab() {
 
             {state.growthHistory.length > 0 ? (
               <div className="h-80">
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width={chartSize} height={chartSize}>
                   <LineChart data={state.growthHistory}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
                     <XAxis dataKey="time" stroke="#4b5563" />
