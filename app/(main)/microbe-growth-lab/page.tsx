@@ -312,7 +312,7 @@ export default function MicrobeGrowthLab() {
     
     const interval = setInterval(() => {
       setChartSize(prev => prev === "99%" ? "100%" : "99%");
-    }, 1000); // Toggle every 3 seconds
+    }, 500); // Toggle every 3 seconds
     
     return () => clearInterval(interval);
   }, [isRunning]);
