@@ -23,7 +23,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
 
   if (!isLoading && user) {
     return (
-      <div className="min-h-screen container mx-auto min-w-full flex items-center justify-start bg-background">
+      <div className="mx-auto container min-h-svh max-w-8xl w-full">
         {children}
         
         <Toaster />
@@ -31,7 +31,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
     );
   } else if(isLoading || !user) {
     return (
-      <div>Loading...</div>
+      <div className="min-h-svh flex items-center justify-center">Building Interface</div>
     )
   }
 }
