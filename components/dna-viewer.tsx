@@ -2,9 +2,12 @@
 
 import { useState } from "react"
 import { ChevronLeft, ChevronRight } from "lucide-react"
+// lib
+import { cn } from "@/lib/utils"
 
 const DNA_SEQUENCE =
   "ATGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGC"
+
 
 export function DNAViewer() {
   const [scrollPos, setScrollPos] = useState(0)
@@ -23,7 +26,7 @@ export function DNAViewer() {
   const highlightEnd = 25
 
   return (
-    <div className="glass p-6 rounded-lg col-span-2">
+    <div className={cn("glass w-full p-6 rounded-lg col-span-2")}>
       <h3 className="text-lg font-semibold mb-4 ">DNA Sequence Viewer</h3>
 
       <div className="bg-black/40 border border-border rounded-lg p-6 font-mono text-sm overflow-hidden">

@@ -11,13 +11,13 @@ import { AlertCircle, Activity, Shield } from "lucide-react"
 
 export default function Dashboard() {
   return (
-    <div className="flex">
+    <div className="space-x-8">
       <Sidebar />
-      <div className="flex-1 ml-16 pt-16">
+      <div className="ml-16 pt-16">
         <Header title="Dashboard" />
 
-        <main className="p-8 bg-background min-h-screen">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        <main className="mx-auto max-w-7xl container pt-8 bg-background min-w-full min-h-screen space-y-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 ">
             <StatCard
               title="Total Sequences Analyzed"
               value="24,521"
@@ -34,16 +34,16 @@ export default function Dashboard() {
             />
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 gap-8">
             <div className="lg:col-span-2 space-y-8">
               <DNAViewer />
               <MutationTable />
               <AMRChart />
             </div>
 
-            <div>
-              {/* <SimulationPanel /> */}
-            </div>
+            {/* <div>
+               <SimulationPanel /> 
+            </div> */}
           </div>
         </main>
       </div>

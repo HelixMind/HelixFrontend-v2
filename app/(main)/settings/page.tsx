@@ -100,7 +100,7 @@ export default function Settings() {
               </div>
 
               {/* Edit Information */}
-              <div className="pt-4 border-t border-border grid grid-cols-1 sm:grid-cols-2 items-center gap-4">
+              {/* <div className="pt-4 border-t border-border grid grid-cols-1 sm:grid-cols-2 items-center gap-4">
                 <div>
                   <h3 className="flex items-center gap-2 text-lg font-semibold truncate">
                     Update Your Profile
@@ -113,19 +113,19 @@ export default function Settings() {
                 <div>
                   <Button>Update Information</Button>
                 </div>
-              </div>
+              </div> */}
             </CardContent>
           </Card>
 
           {/* API & Account Settings Card */}
-          <Card>
+          {/* <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Key className="w-5 h-5" />
                 Account Settings
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-6">
+            <CardContent className="space-y-6"> */}
               {/* API Key */}
               {/* <div>
                 <label className="text-sm text-muted-foreground block mb-2">
@@ -143,7 +143,7 @@ export default function Settings() {
               </div> */}
 
               {/* Data Retention */}
-              <div>
+              {/* <div>
                 <label className="text-sm text-muted-foreground block mb-2">
                   Data Retention (days)
                 </label>
@@ -158,7 +158,7 @@ export default function Settings() {
                   }
                   className="w-full"
                 />
-              </div>
+              </div> */}
 
               {/* Theme Selection */}
               {/* <div>
@@ -216,11 +216,11 @@ export default function Settings() {
                 <Save className="w-4 h-4" />
                 Save Settings
               </Button> */}
-            </CardContent>
-          </Card>
+            {/* </CardContent>
+          </Card> */}
 
           {/* Danger Zone Card */}
-          <Card>
+          {/* <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-red-500">
                 <AlertTriangle className="w-5 h-5" />
@@ -235,7 +235,7 @@ export default function Settings() {
                 Delete All Data
               </Button>
             </CardContent>
-          </Card>
+          </Card> */}
         </main>
       </div>
     </div>

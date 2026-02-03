@@ -305,12 +305,12 @@ export default function MutationSimulator() {
   };
 
   return (
-    <div className="flex flex-1">
+    <div className="space-x-8">
       <Sidebar />
-      <div className="flex-1 ml-16 pt-16">
+      <div className="ml-16 pt-16">
         <Header title="Mutation Simulator" />
 
-        <main className="w-full p-8 bg-background min-h-screen">
+        <main className="mx-auto max-w-7xl container pt-8 bg-background min-w-full min-h-screen space-y-8">
           {/* Upload */}
           <div className="glass p-12 rounded-lg border-2 border-dashed border-primary/50 text-center mb-10">
             <Upload className="w-12 h-12 mx-auto mb-4 text-primary" />

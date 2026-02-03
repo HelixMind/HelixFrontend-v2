@@ -470,11 +470,11 @@ export default function MicrobeGrowthLab() {
     : STRAINS[selectedStrain];
 
   return (
-    <div className="flex w-full">
+    <div className="space-x-8">
       <Sidebar />
-      <div className="flex-1 ml-16 pt-16">
+      <div className="ml-16 pt-16">
         <Header title="Microbe Growth Lab" />
-        <div className="min-h-screen bg-black text-neutral-200 p-6">
+        <main className="mx-auto max-w-7xl container pt-8 bg-background min-w-full min-h-screen space-y-8">
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
             {/* Strain Selection */}
             <div className="bg-neutral-950 border border-neutral-800 rounded-lg p-6">
@@ -898,7 +898,7 @@ export default function MicrobeGrowthLab() {
               )}
             </div>
           </div>
-        </div>
+        </main>
       </div>
     </div>
   );

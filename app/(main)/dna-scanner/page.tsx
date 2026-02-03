@@ -236,12 +236,12 @@ export default function DNAScanner() {
   };
 
   return (
-    <div className="flex">
+    <div className="space-x-8">
       <Sidebar />
-      <div className="flex-1 ml-16 pt-16">
+      <div className="ml-16 pt-16">
         <Header title="DNA Scanner" />
 
-        <main className="space-y-8 p-8 bg-background min-h-screen min-w-7xl max-w-7xl">
+        <main className="mx-auto max-w-7xl container pt-8 bg-background min-w-full min-h-screen space-y-8">
           {/* info */}
           <div className="flex flex-row items-center gap-2 justify-start glass p-4 text-gray-400 max-w-175">
             <Info className="size-4 shrink-0" />
