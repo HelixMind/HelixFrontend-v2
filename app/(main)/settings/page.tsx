@@ -38,14 +38,14 @@ export default function Settings() {
   const {user} = useAuth();
 
   return (
-    <div className="flex">
+    <div>
       <Sidebar />
-      <div className="flex-1 ml-16 pt-16">
+      <div className="ml-16 pt-16">
         <Header title="Settings" />
 
-        <main className="w-full max-w-6xl p-8 bg-background min-h-screen space-y-8">
+        <main className="mx-auto max-w-7xl container pt-8 bg-background min-w-full min-h-screen space-y-8">
           {/* Profile Card */}
-          <Card>
+          <Card className="px-0">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <User className="w-5 h-5" />
@@ -136,7 +136,7 @@ export default function Settings() {
                     type="password"
                     value={settings.apiKey}
                     readOnly
-                    className="flex-1 truncate"
+                    className=" truncate"
                   />
                   <Button>Regenerate</Button>
                 </div>
