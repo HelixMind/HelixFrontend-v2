@@ -32,8 +32,8 @@ export function DNAViewer() {
             <ChevronLeft className="w-4 h-4" />
           </button>
 
-          <div className="flex-1 overflow-x-auto">
-            <div className="flex gap-1 whitespace-nowrap">
+          <div className="flex-1 overflow-x-auto seq-scroll">
+            <div className="flex gap-1 whitespace-nowrap seq-scroll">
               {visibleSequence.split("").map((base, idx) => (
                 <span
                   key={idx}

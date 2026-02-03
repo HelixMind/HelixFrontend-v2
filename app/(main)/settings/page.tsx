@@ -195,7 +195,7 @@ export default function Settings() {
                 </label>
               </div> */}
 
-              <div className="flex items-center gap-3">
+{/*               <div className="flex items-center gap-3">
                 <input
                   type="checkbox"
                   checked={settings.emailNotifications}
@@ -215,7 +215,7 @@ export default function Settings() {
               >
                 <Save className="w-4 h-4" />
                 Save Settings
-              </Button>
+              </Button> */}
             </CardContent>
           </Card>
 
