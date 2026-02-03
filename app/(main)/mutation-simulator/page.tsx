@@ -6,6 +6,9 @@ import { Play, Pause, RotateCcw, Upload, Download } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
+// ui
+import { Button } from "@/components/ui/button";
+
 // ==================== SIMULATION UTILITIES ====================
 
 const CODON_MAP: Record<string, string> = {
@@ -671,11 +674,11 @@ export default function MutationSimulator() {
                   </div>
                 </div>
 
-                <div className="flex gap-2">
-                  <button
+                <div className="flex items-center w-full gap-2">
+                  <Button
                     onClick={handleStart}
-                    className=" bg-primary hover:bg-primary/80 text-primary-foreground font-semibold py-2 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
                     disabled={!sequence}
+                    className="w-1/2"
                   >
                     {isRunning ? (
                       <Pause className="w-4 h-4" />
@@ -683,15 +686,16 @@ export default function MutationSimulator() {
                       <Play className="w-4 h-4" />
                     )}
                     {isRunning ? "Pause" : "Start"}
-                  </button>
+                  </Button>
 
-                  <button
+                  <Button
                     onClick={handleReset}
-                    className=" bg-card hover:bg-card/80 text-foreground font-semibold py-2 rounded-lg transition-colors flex items-center justify-center gap-2"
+                    variant={"secondary"}
+                    className="w-1/2"
                   >
                     <RotateCcw className="w-4 h-4" />
                     Reset
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>

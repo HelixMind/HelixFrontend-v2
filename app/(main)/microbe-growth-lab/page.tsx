@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   Play,
   Pause,
@@ -293,7 +293,7 @@ export default function MicrobeGrowthLab() {
     resistance: 0.0,
   });
   const [genomeInfo, setGenomeInfo] = useState<GenomeInfo | null>(null);
-  const [chartSize, setChartSize] = useState<"99%" | "100%">("99%");
+  const [chartSize, setChartSize] = useState<"99.5%" | "100%">("99.5%");
 
   const [temperature, setTemperature] = useState(37);
   const [pH, setPH] = useState(7.0);
@@ -301,19 +301,22 @@ export default function MicrobeGrowthLab() {
   const [oxygen, setOxygen] = useState(21);
   const [antibioticOn, setAntibioticOn] = useState(false);
 
+  // Memoize chart data to prevent unnecessary re-renders
+  const chartData = useMemo(() => state.growthHistory, [state.growthHistory]);
+
   // Sync environment changes
   useEffect(() => {
     sim.updateEnvironment({ temperature, pH, nutrients, oxygen, antibioticOn });
   }, [temperature, pH, nutrients, oxygen, antibioticOn, sim]);
 
-  // Chart size oscillation effect when running
+  // Chart size oscillation effect when running - more subtle
   useEffect(() => {
     if (!isRunning) return;
-    
+
     const interval = setInterval(() => {
-      setChartSize(prev => prev === "99%" ? "100%" : "99%");
-    }, 500); // Toggle every 3 seconds
-    
+      setChartSize((prev) => (prev === "99.5%" ? "100%" : "99.5%"));
+    }, 1500); // Slower toggle every 1.5 seconds
+
     return () => clearInterval(interval);
   }, [isRunning]);
 
@@ -426,13 +429,13 @@ export default function MicrobeGrowthLab() {
     setNutrients(100);
     setOxygen(21);
     setAntibioticOn(false);
-    setChartSize("99%");
+    setChartSize("99.5%");
   };
 
   const handleStartPause = () => {
     if (!isRunning) {
       // Starting simulation
-      setChartSize("99%");
+      setChartSize("99.5%");
     }
     setIsRunning(!isRunning);
   };
@@ -490,15 +493,15 @@ export default function MicrobeGrowthLab() {
                     onClick={() => handleStrainChange(key)}
                     className={`w-full p-3 rounded-md text-left text-sm border transition-colors ${
                       selectedStrain === key && !showCustomStrain
-                        ? "bg-neutral-800 border-neutral-600"
-                        : "bg-neutral-900 border-neutral-800 hover:border-neutral-700"
+                        ? "bg-neutral-800 border-neutral-200"
+                        : "bg-neutral-900 border-neutral-00 hover:border-neutral-200"
                     }`}
                   >
                     <div className="font-medium">{strain.name}</div>
-                    <div className="text-xs text-neutral-500 mt-0.5">
+                    <div className="text-xs text-neutral-300 mt-0.5">
                       {strain.description}
                     </div>
-                    <div className="text-xs text-neutral-600 mt-1">
+                    <div className="text-xs text-neutral-400 mt-1">
                       Growth: {(strain.growthRate * 100).toFixed(0)}% • Resist:{" "}
                       {(strain.resistance * 100).toFixed(0)}%
                     </div>
@@ -687,7 +690,7 @@ export default function MicrobeGrowthLab() {
                     max="46"
                     value={temperature}
                     onChange={(e) => setTemperature(Number(e.target.value))}
-                    className="w-full h-1.5 bg-neutral-800 rounded-full appearance-none cursor-pointer accent-neutral-500"
+                        className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary disabled:opacity-50"
                   />
                 </div>
 
@@ -811,33 +814,32 @@ export default function MicrobeGrowthLab() {
                 </div>
 
                 <div className="pt-4 space-y-3 border-t border-neutral-800">
-                  <button
-                    onClick={handleStartPause}
-                    className="w-full bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-neutral-200 font-medium py-2.5 rounded-md flex items-center justify-center gap-2 transition-colors"
-                  >
+                  <Button onClick={handleStartPause} className="w-full">
                     {isRunning ? (
                       <Pause className="h-5 w-5" />
                     ) : (
                       <Play className="h-5 w-5" />
                     )}
                     {isRunning ? "Pause" : "Start"}
-                  </button>
+                  </Button>
 
-                  <button
+                  <Button
                     onClick={handleReset}
-                    className="w-full bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-neutral-300 font-medium py-2.5 rounded-md flex items-center justify-center gap-2 transition-colors"
+                    variant="secondary"
+                    className="w-full"
                   >
                     <RotateCcw className="h-5 w-5" />
                     Reset
-                  </button>
+                  </Button>
 
-                  <button
+                  <Button
                     onClick={handleExport}
-                    className="w-full bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-neutral-300 font-medium py-2.5 rounded-md flex items-center justify-center gap-2 transition-colors"
+                    variant="secondary"
+                    className="w-full"
                   >
                     <Download className="h-5 w-5" />
                     Export CSV
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>
@@ -850,13 +852,22 @@ export default function MicrobeGrowthLab() {
               Population Growth
             </h2>
 
-            {state.growthHistory.length > 0 ? (
+            {chartData.length > 0 ? (
               <div className="h-80">
                 <ResponsiveContainer width={chartSize} height={chartSize}>
-                  <LineChart data={state.growthHistory} className="transition-all duration-300 ease-in-out  ">
-                    <CartesianGrid strokeDasharray="3 3" stroke="#1f2937"  />
-                    <XAxis dataKey="time" stroke="#4b5563" fontSize={"0.8rem"} />
-                    <YAxis stroke="#4b5563" fontSize={"0.8rem"}/>
+                  <LineChart
+                    data={chartData}
+                    className="transition-all duration-1000 ease-in-out"
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="#404040" />
+                    <XAxis
+                      dataKey="time"
+                      stroke="#FBFBFB"
+                      fontSize={"0.8rem"}
+                      interval="preserveStartEnd"
+                      minTickGap={50}
+                    />
+                    <YAxis stroke="#FBFBFB" fontSize={"0.8rem"} />
                     <Tooltip
                       contentStyle={{
                         backgroundColor: "#0f172a",
@@ -867,7 +878,7 @@ export default function MicrobeGrowthLab() {
                     <Line
                       type="monotone"
                       dataKey="population"
-                      stroke="#6b7280"
+                      stroke="#FBFBFB"
                       strokeWidth={2}
                       dot={false}
                       isAnimationActive={false}
@@ -881,7 +892,6 @@ export default function MicrobeGrowthLab() {
               </div>
             )}
           </div>
-
           {/* Log */}
           <div className="bg-neutral-950 border border-neutral-800 rounded-lg p-6">
             <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
