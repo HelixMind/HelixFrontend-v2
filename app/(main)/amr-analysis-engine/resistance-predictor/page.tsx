@@ -222,7 +222,7 @@ export default function ResistancePredictorPage() {
 ======================= */
   return (
     <div className="flex-1 ml-16">
-      <main className="space-y-8 p-8 bg-background min-h-screen">
+      <main className="space-y-8 bg-background min-h-screen">
 
         {/* Information Panel */}
         <div className="flex flex-row items-center gap-2 justify-start glass p-4 text-gray-400 max-w-[700px]">
