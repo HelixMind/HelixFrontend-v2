@@ -5,6 +5,7 @@ import { Header } from "@/components/header";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import clsx from "clsx";
+import { cn } from "@/lib/utils";
 
 export default function AMRLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -25,14 +26,14 @@ export default function AMRLayout({ children }: { children: React.ReactNode }) {
   ];
 
   return (
-    <div className="flex flex-1">
+    <div className="">
       <Sidebar />
 
-      <div className="flex-1 pt-16">
+      <div className="pt-16">
         <Header title="AMR Analysis Engine" />
 
         {/* Top Navigation / Tabs */}
-        <div className="pl-25 px-8 border-b border-border flex gap-6">
+        <div className="fixed top-10 left-16 right-0 bg-background/80 backdrop-blur-lg border-b border-border flex items-center gap-6 px-8 pt-6 z-39">
           {navItems.map((item) => {
             const isActive = pathname.startsWith(item.href);
 
@@ -41,7 +42,7 @@ export default function AMRLayout({ children }: { children: React.ReactNode }) {
                 key={item.href}
                 href={item.href}
                 className={clsx(
-                  "py-4 text-sm font-medium relative transition-colors",
+                  "py-6 text-sm font-medium relative transition-all duration-300 ease-in-out",
                   isActive
                     ? "text-primary"
                     : "text-muted-foreground hover:text-foreground"
@@ -49,7 +50,10 @@ export default function AMRLayout({ children }: { children: React.ReactNode }) {
               >
                 {item.name}
                 {isActive && (
-                  <span className="absolute left-0 -bottom-px h-[2px] w-full bg-primary rounded-full" />
+                  <span className={cn(
+                    "absolute left-0 -bottom-px h-[2px] w-full bg-primary rounded-full animate-in duration-300",
+                    item.href === "/amr-analysis-engine/resistance-predictor" ?  "slide-in-from-right" : "slide-in-from-left"
+                  )} />
                 )}
               </Link>
             );
@@ -57,7 +61,7 @@ export default function AMRLayout({ children }: { children: React.ReactNode }) {
         </div>
 
         {/* Page Content */}
-        <div className="w-full">{children}</div>
+        <div className="w-full pt-25 animate-in fade-in duration-500">{children}</div>
       </div>
     </div>
   );
