@@ -161,7 +161,7 @@ export default function Settings() {
               </div>
 
               {/* Theme Selection */}
-              <div>
+              {/* <div>
                 <label className="text-sm text-muted-foreground block mb-2">
                   Theme
                 </label>
@@ -178,10 +178,10 @@ export default function Settings() {
                     </Button>
                   ))}
                 </div>
-              </div>
+              </div> */}
 
               {/* Notifications */}
-              <div className="flex items-center gap-3">
+              {/*<div className="flex items-center gap-3">
                 <input
                   type="checkbox"
                   checked={settings.notifications}
@@ -193,7 +193,7 @@ export default function Settings() {
                 <label className="text-sm text-foreground cursor-pointer">
                   Enable notifications
                 </label>
-              </div>
+              </div> */}
 
               <div className="flex items-center gap-3">
                 <input

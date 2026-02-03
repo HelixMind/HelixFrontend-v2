@@ -853,10 +853,10 @@ export default function MicrobeGrowthLab() {
             {state.growthHistory.length > 0 ? (
               <div className="h-80">
                 <ResponsiveContainer width={chartSize} height={chartSize}>
-                  <LineChart data={state.growthHistory}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
-                    <XAxis dataKey="time" stroke="#4b5563" />
-                    <YAxis stroke="#4b5563" />
+                  <LineChart data={state.growthHistory} className="transition-all duration-300 ease-in-out  ">
+                    <CartesianGrid strokeDasharray="3 3" stroke="#1f2937"  />
+                    <XAxis dataKey="time" stroke="#4b5563" fontSize={"0.8rem"} />
+                    <YAxis stroke="#4b5563" fontSize={"0.8rem"}/>
                     <Tooltip
                       contentStyle={{
                         backgroundColor: "#0f172a",
