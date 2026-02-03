@@ -72,7 +72,7 @@ export default function GeneDatabase() {
   );
 
   return (
-    <div className="flex-1 ml-16">
+    <div className=" ml-16">
       <main className="space-y-6 bg-background min-h-screen">
 
         {/* Stats */}

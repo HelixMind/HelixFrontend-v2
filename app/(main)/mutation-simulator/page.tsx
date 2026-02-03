@@ -497,7 +497,7 @@ export default function MutationSimulator() {
                           }`}>
                             Gen {gen}
                           </span>
-                          <div className="flex-1 bg-card rounded-full h-3 overflow-hidden border border-border/50">
+                          <div className=" bg-card rounded-full h-3 overflow-hidden border border-border/50">
                             <div
                               className={`h-full rounded-full transition-all duration-500 ${
                                 isActive && isRunning 
@@ -674,7 +674,7 @@ export default function MutationSimulator() {
                 <div className="flex gap-2">
                   <button
                     onClick={handleStart}
-                    className="flex-1 bg-primary hover:bg-primary/80 text-primary-foreground font-semibold py-2 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                    className=" bg-primary hover:bg-primary/80 text-primary-foreground font-semibold py-2 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
                     disabled={!sequence}
                   >
                     {isRunning ? (
@@ -687,7 +687,7 @@ export default function MutationSimulator() {
 
                   <button
                     onClick={handleReset}
-                    className="flex-1 bg-card hover:bg-card/80 text-foreground font-semibold py-2 rounded-lg transition-colors flex items-center justify-center gap-2"
+                    className=" bg-card hover:bg-card/80 text-foreground font-semibold py-2 rounded-lg transition-colors flex items-center justify-center gap-2"
                   >
                     <RotateCcw className="w-4 h-4" />
                     Reset

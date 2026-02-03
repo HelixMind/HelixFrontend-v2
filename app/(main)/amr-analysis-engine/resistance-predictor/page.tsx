@@ -221,7 +221,7 @@ export default function ResistancePredictorPage() {
      Render UI
 ======================= */
   return (
-    <div className="flex-1 ml-16">
+    <div className="ml-16">
       <main className="space-y-8 bg-background min-h-screen">
 
         {/* Information Panel */}
