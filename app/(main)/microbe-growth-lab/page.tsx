@@ -34,6 +34,7 @@ import {
 import { Sidebar } from "@/components/sidebar";
 import { Header } from "@/components/header";
 import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 // ────────────────────────────────────────────────
 //  TYPES
@@ -301,6 +302,10 @@ export default function MicrobeGrowthLab() {
   const [oxygen, setOxygen] = useState(21);
   const [antibioticOn, setAntibioticOn] = useState(false);
 
+  // Validation warnings
+  const [tempWarning, setTempWarning] = useState("");
+  const [phWarning, setPhWarning] = useState("");
+
   // Memoize chart data to prevent unnecessary re-renders
   const chartData = useMemo(() => state.growthHistory, [state.growthHistory]);
 
@@ -430,6 +435,8 @@ export default function MicrobeGrowthLab() {
     setOxygen(21);
     setAntibioticOn(false);
     setChartSize("99.5%");
+    setTempWarning("");
+    setPhWarning("");
   };
 
   const handleStartPause = () => {
@@ -460,6 +467,28 @@ export default function MicrobeGrowthLab() {
     a.download = "microbe_growth_data.csv";
     a.click();
     URL.revokeObjectURL(url);
+  };
+
+  const handleTemperatureChange = (value: number) => {
+    setTemperature(value);
+    if (value < 10) {
+      setTempWarning("Temperature too low - min 10°C");
+    } else if (value > 46) {
+      setTempWarning("Temperature too high - max 46°C");
+    } else {
+      setTempWarning("");
+    }
+  };
+
+  const handlePHChange = (value: number) => {
+    setPH(value);
+    if (value < 5) {
+      setPhWarning("pH too low - min 5.0");
+    } else if (value > 9) {
+      setPhWarning("pH too high - max 9.0");
+    } else {
+      setPhWarning("");
+    }
   };
 
   const getStressClass = (level: number): string => {
@@ -684,14 +713,29 @@ export default function MicrobeGrowthLab() {
                     <span>Temperature</span>
                     <span>{temperature}°C</span>
                   </div>
+                  {/* scroll bar */}
                   <input
                     type="range"
                     min="10"
                     max="46"
                     value={temperature}
-                    onChange={(e) => setTemperature(Number(e.target.value))}
-                        className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary disabled:opacity-50"
+                    onChange={(e) => handleTemperatureChange(Number(e.target.value))}
+                    className="w-full flex-1 accent-primary disabled:opacity-50 cursor-grab"
                   />
+                  <div className="flex items-center gap-2 mt-2">
+                    <input
+                      type="number"
+                      value={temperature}
+                      onChange={(e) => handleTemperatureChange(Number(e.target.value))}
+                      className="w-full bg-neutral-900 border border-neutral-800 rounded px-3 py-2 text-sm focus:outline-none focus:border-neutral-600"
+                    />
+                  </div>
+                  {tempWarning && (
+                    <p className="text-xs text-red-400 mt-1 flex items-center gap-1">
+                      <AlertTriangle className="h-3 w-3" />
+                      {tempWarning}
+                    </p>
+                  )}
                 </div>
 
                 {/* pH */}
@@ -700,15 +744,31 @@ export default function MicrobeGrowthLab() {
                     <span>pH</span>
                     <span>{pH.toFixed(1)}</span>
                   </div>
+                  {/* scroll bar */}
                   <input
                     type="range"
                     min="5"
                     max="9"
                     step="0.1"
                     value={pH}
-                    onChange={(e) => setPH(Number(e.target.value))}
-                    className="w-full h-1.5 bg-neutral-800 rounded-full appearance-none cursor-pointer accent-neutral-500"
+                    onChange={(e) => handlePHChange(Number(e.target.value))}
+                    className="w-full flex-1 accent-primary disabled:opacity-50 cursor-grab"
                   />
+                  <div className="flex items-center gap-2 mt-2">
+                    <input
+                      type="number"
+                      step="0.1"
+                      value={pH}
+                      onChange={(e) => handlePHChange(Number(e.target.value))}
+                      className="w-full bg-neutral-900 border border-neutral-800 rounded px-3 py-2 text-sm focus:outline-none focus:border-neutral-600"
+                    />
+                  </div>
+                  {phWarning && (
+                    <p className="text-xs text-red-400 mt-1 flex items-center gap-1">
+                      <AlertTriangle className="h-3 w-3" />
+                      {phWarning}
+                    </p>
+                  )}
                 </div>
 
                 {/* Nutrients */}
@@ -717,14 +777,23 @@ export default function MicrobeGrowthLab() {
                     <span>Nutrients</span>
                     <span>{Math.round(nutrients)}%</span>
                   </div>
+                  {/* scroll bar */}
                   <input
                     type="range"
                     min="0"
                     max="100"
                     value={nutrients}
                     onChange={(e) => setNutrients(Number(e.target.value))}
-                    className="w-full h-1.5 bg-neutral-800 rounded-full appearance-none cursor-pointer accent-neutral-500"
+                    className="w-full flex-1 accent-primary disabled:opacity-50 cursor-grab"
                   />
+                  <div className="flex items-center gap-2 mt-2">
+                    <input
+                      type="number"
+                      value={Math.round(nutrients)}
+                      onChange={(e) => setNutrients(Number(e.target.value))}
+                      className="w-full bg-neutral-900 border border-neutral-800 rounded px-3 py-2 text-sm focus:outline-none focus:border-neutral-600"
+                    />
+                  </div>
                 </div>
 
                 {/* Oxygen */}
@@ -733,14 +802,23 @@ export default function MicrobeGrowthLab() {
                     <span>Oxygen</span>
                     <span>{oxygen}%</span>
                   </div>
+                  {/* scroll bar */}
                   <input
                     type="range"
                     min="0"
                     max="100"
                     value={oxygen}
                     onChange={(e) => setOxygen(Number(e.target.value))}
-                    className="w-full h-1.5 bg-neutral-800 rounded-full appearance-none cursor-pointer accent-neutral-500"
+                    className="w-full flex-1 accent-primary disabled:opacity-50 cursor-grab"
                   />
+                  <div className="flex items-center gap-2 mt-2">
+                    <input
+                      type="number"
+                      value={oxygen}
+                      onChange={(e) => setOxygen(Number(e.target.value))}
+                      className="w-full bg-neutral-900 border border-neutral-800 rounded px-3 py-2 text-sm focus:outline-none focus:border-neutral-600"
+                    />
+                  </div>
                 </div>
 
                 {/* Antibiotic */}
@@ -898,7 +976,7 @@ export default function MicrobeGrowthLab() {
               <Clock className="h-5 w-5" />
               Adaptation Log
             </h2>
-            <div className="bg-black rounded p-4 h-48 overflow-y-auto text-sm font-mono text-neutral-400 space-y-1 border border-neutral-900">
+            <ScrollArea className="bg-black rounded p-4 h-48 text-sm font-mono text-neutral-400 space-y-1 border border-neutral-900">
               {state.adaptationLog.length === 0 ? (
                 <p className="text-neutral-600">Simulation not started yet.</p>
               ) : (
@@ -906,7 +984,7 @@ export default function MicrobeGrowthLab() {
                   <div key={i}>{entry}</div>
                 ))
               )}
-            </div>
+            </ScrollArea>
           </div>
         </main>
       </div>
