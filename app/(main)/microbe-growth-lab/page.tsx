@@ -538,7 +538,7 @@ export default function MicrobeGrowthLab() {
                 ))}
               </div>
 
-              <button
+              {/* <button
                 onClick={() => handleStrainChange("custom")}
                 className={`w-full p-3 rounded-md text-left text-sm border transition-colors ${
                   showCustomStrain
@@ -553,7 +553,7 @@ export default function MicrobeGrowthLab() {
                 <div className="text-xs text-neutral-500 mt-0.5">
                   User-defined bacteria
                 </div>
-              </button>
+              </button> */}
 
               <div className="mt-5 pt-4 border-t border-neutral-800">
                 <label className="text-xs font-medium text-neutral-500 block mb-2 flex items-center gap-2">
