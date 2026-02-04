@@ -7,6 +7,7 @@ import {
   RotateCcw,
   Download,
   Microscope,
+  DnaIcon,
   Plus,
   FileText,
   Thermometer,
@@ -511,7 +512,7 @@ export default function MicrobeGrowthLab() {
             {/* Strain Selection */}
             <div className="bg-neutral-950 border border-neutral-800 rounded-lg p-6">
               <h2 className="text-lg font-semibold mb-5 flex items-center gap-2">
-                <Microscope className="h-5 w-5" />
+                <DnaIcon className="h-5 w-5" />
                 Strain
               </h2>
 
