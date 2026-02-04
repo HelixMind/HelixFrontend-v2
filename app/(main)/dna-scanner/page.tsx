@@ -269,7 +269,7 @@ export default function DNAScanner() {
                 </p>
                 <label
                   htmlFor="fasta_file"
-                  className="bg-primary hover:bg-primary/80 text-primary-foreground font-semibold px-8 py-3 rounded-lg transition-colors cursor-pointer"
+                  className="cursor-pointer inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-sm text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 py-2 has-[>svg]:px-3"
                 >
                   Browse Files
                   <input
@@ -283,7 +283,7 @@ export default function DNAScanner() {
                 </label>
                 {fasta_file && (
                   <div className="mt-6 flex items-center justify-center gap-2 text-sm text-muted-foreground">
-                    <FileText className="w-8 h-8 text-primary" />
+                    <FileText className="w-5 h-5" />
                     <span className="text-xs font-medium max-w-sm truncate">
                       {fasta_file.name}
                     </span>
@@ -307,7 +307,7 @@ export default function DNAScanner() {
                 </p>
                 <label
                   htmlFor="reference_file"
-                  className="bg-primary hover:bg-primary/80 text-primary-foreground font-semibold px-8 py-3 rounded-lg transition-colors cursor-pointer"
+                  className="cursor-pointer inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-sm text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 py-2 has-[>svg]:px-3"
                 >
                   Browse Files
                   <input
@@ -321,7 +321,7 @@ export default function DNAScanner() {
                 </label>
                 {reference_file && (
                   <div className="mt-6 flex items-center justify-center gap-2 text-sm text-muted-foreground">
-                    <FileText className="w-8 h-8 text-primary" />
+                    <FileText className="w-5 h-5" />
                     <span className="text-xs font-medium max-w-sm truncate">
                       {reference_file.name}
                     </span>
@@ -336,7 +336,6 @@ export default function DNAScanner() {
             <Button
               onClick={handleRunScan}
               className="w-full py-4 font-bold"
-              size={"lg"}
             >
               Run DNA Scan
             </Button>
@@ -348,38 +347,38 @@ export default function DNAScanner() {
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b pb-4">
               {/* Tabs */}
               <div className="flex gap-2">
-                <button
+                <Button
                   onClick={() => setActiveTab("stats")}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+                  className={`bg-primary/50 ${
                     activeTab === "stats"
                       ? "bg-primary text-primary-foreground"
-                      : "hover:bg-muted"
+                      : "hover:bg-primary/80"
                   }`}
                 >
                   Statistics
-                </button>
+                </Button>
 
-                <button
+                <Button
                   onClick={() => setActiveTab("mutations")}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+                  className={`bg-primary/50 ${
                     activeTab === "mutations"
                       ? "bg-primary text-primary-foreground"
-                      : "hover:bg-muted"
+                      : "hover:bg-primary/80"
                   }`}
                 >
                   Mutations ({mutations.length})
-                </button>
+                </Button>
 
-                <button
+                <Button
                   onClick={() => setActiveTab("sequence")}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+                  className={`bg-primary/50 ${
                     activeTab === "sequence"
                       ? "bg-primary text-primary-foreground"
-                      : "hover:bg-muted"
+                      : "hover:bg-primary/80"
                   }`}
                 >
                   Sequence Preview
-                </button>
+                </Button>
               </div>
 
               {/* Actions */}
