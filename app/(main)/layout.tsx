@@ -8,6 +8,9 @@ import { Toaster } from "@/components/ui/toaster"
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 
+// icons
+import { SettingsIcon } from "lucide-react"
+
 const _geist = Geist({ subsets: ["latin"] })
 const _geistMono = Geist_Mono({ subsets: ["latin"] })
 
@@ -23,7 +26,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
 
   if (!isLoading && user) {
     return (
-      <div className="mx-auto container min-h-svh max-w-8xl w-full">
+      <div className="mx-auto container min-h-svh max-w-8xl w-full mb-4">
         {children}
         
         <Toaster />
@@ -31,7 +34,10 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
     );
   } else if(isLoading || !user) {
     return (
-      <div className="min-h-svh flex items-center justify-center">Building Interface</div>
+      <div className="min-h-svh flex items-center justify-center gap-2">
+        <SettingsIcon className="animate-spin duration-200 transition-all ease-linear size-6" />
+        Building Digital Laboratory...
+        </div>
     )
   }
 }
