@@ -149,7 +149,7 @@ export function Sidebar() {
             </div>
 
             {showLabels && (
-              <div className="truncate">
+              <div className="truncate animate-in slide-in-from-left transition-all duration-200 ease-linear">
                 <h3 className="flex items-center gap-2 text-lg font-semibold truncate transition-all ease-out duration-150">
                   <span className="text-sm truncate">{user?.name ?? "Guest"}</span>
                 </h3>
