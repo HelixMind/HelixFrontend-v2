@@ -84,7 +84,7 @@ export default function Settings() {
                   <Input
                     value={user?.name ?? "Guest"}
                     readOnly
-                    className="mt-1 truncate"
+                    className="mt-1 truncate focus-visible:border-0 focus-visible:ring-ring/0 focus-visible:ring-[0px]"
                   />
                 </div>
                 <div>
@@ -94,7 +94,7 @@ export default function Settings() {
                   <Input
                     value={user?.email ?? ""}
                     readOnly
-                    className="mt-1 truncate"
+                    className="mt-1 truncate focus-visible:border-0 focus-visible:ring-ring/0 focus-visible:ring-[0px]"
                   />
                 </div>
               </div>
