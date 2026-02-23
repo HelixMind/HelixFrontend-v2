@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import {
   Play,
   Pause,
@@ -307,6 +307,9 @@ export default function MicrobeGrowthLab() {
   const [tempWarning, setTempWarning] = useState("");
   const [phWarning, setPhWarning] = useState("");
 
+  // Ref attached to chart wrapper so handleExportPNG can find the SVG inside
+  const chartRef = useRef<HTMLDivElement>(null);
+
   // Memoize chart data to prevent unnecessary re-renders
   const chartData = useMemo(() => state.growthHistory, [state.growthHistory]);
 
@@ -321,7 +324,7 @@ export default function MicrobeGrowthLab() {
 
     const interval = setInterval(() => {
       setChartSize((prev) => (prev === "99.5%" ? "100%" : "99.5%"));
-    }, 1500); // Slower toggle every 1.5 seconds
+    }, 1500);
 
     return () => clearInterval(interval);
   }, [isRunning]);
@@ -442,7 +445,6 @@ export default function MicrobeGrowthLab() {
 
   const handleStartPause = () => {
     if (!isRunning) {
-      // Starting simulation
       setChartSize("99.5%");
     }
     setIsRunning(!isRunning);
@@ -468,6 +470,115 @@ export default function MicrobeGrowthLab() {
     a.download = "microbe_growth_data.csv";
     a.click();
     URL.revokeObjectURL(url);
+  };
+
+  // ── PNG Export ──────────────────────────────────────────────────────────────
+  // How this works:
+  //  1. Find the live SVG that Recharts rendered inside chartRef
+  //  2. Deep-clone it so we never mutate what's on screen
+  //  3. Prepend a dark background rect so the export isn't transparent
+  //  4. Walk every live element, read its computed CSS, and bake those values
+  //     as inline styles onto the matching cloned element — necessary because
+  //     the serialised SVG blob has no stylesheet context
+  //  5. Second pass: force text/axis/grid colours explicitly using both
+  //     .style and setAttribute so they survive all browser renderers
+  //  6. Serialise clone → Blob → object URL → Image
+  //  7. Draw onto a 2× canvas (retina quality) with padding, then download PNG
+  // ───────────────────────────────────────────────────────────────────────────
+  const handleExportPNG = () => {
+    const svg = chartRef.current?.querySelector("svg");
+    if (!svg || chartData.length === 0) {
+      alert("Run simulation first to export chart");
+      return;
+    }
+
+    const cloned = svg.cloneNode(true) as SVGElement;
+    cloned.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+
+    // Capture rendered size before touching the clone
+    const rect = svg.getBoundingClientRect();
+
+    // Dark background rect so the PNG isn't transparent
+    const bg = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+    bg.setAttribute("width", "100%");
+    bg.setAttribute("height", "100%");
+    bg.setAttribute("fill", "#0a0a0a");
+    cloned.insertBefore(bg, cloned.firstChild);
+
+    // Bake computed styles — without this the blob SVG loses all colour
+    svg.querySelectorAll("*").forEach((el, i) => {
+      const computed = window.getComputedStyle(el);
+      const target = cloned.querySelectorAll("*")[i] as SVGElement;
+      [
+        "fill", "stroke", "stroke-width", "stroke-dasharray",
+        "font-size", "font-family", "text-anchor", "dominant-baseline",
+      ].forEach((prop) => {
+        const val = computed.getPropertyValue(prop);
+        if (val) target.style.setProperty(prop, val);
+      });
+    });
+
+    // Force text to be visible on the dark background
+    cloned.querySelectorAll("text, tspan").forEach((el) => {
+      (el as SVGElement).style.fill = "#FBFBFB";
+      (el as SVGElement).setAttribute("fill", "#FBFBFB");
+    });
+
+    // Axis lines
+    cloned
+      .querySelectorAll(".recharts-cartesian-axis-line, .recharts-cartesian-axis-tick-line")
+      .forEach((el) => {
+        (el as SVGElement).style.stroke = "#FBFBFB";
+        (el as SVGElement).setAttribute("stroke", "#FBFBFB");
+      });
+
+    // Subtle grid lines
+    cloned
+      .querySelectorAll(
+        ".recharts-cartesian-grid-horizontal line, .recharts-cartesian-grid-vertical line"
+      )
+      .forEach((el) => {
+        (el as SVGElement).style.stroke = "#404040";
+        (el as SVGElement).setAttribute("stroke", "#404040");
+      });
+
+    // Data line — white, no fill flood
+    cloned.querySelectorAll(".recharts-line-curve").forEach((el) => {
+      (el as SVGElement).style.stroke = "#FBFBFB";
+      (el as SVGElement).style.strokeWidth = "2";
+      (el as SVGElement).style.fill = "none";
+      (el as SVGElement).setAttribute("stroke", "#FBFBFB");
+      (el as SVGElement).setAttribute("fill", "none");
+    });
+
+    const svgBlob = new Blob([cloned.outerHTML], {
+      type: "image/svg+xml;charset=utf-8",
+    });
+    const url = URL.createObjectURL(svgBlob);
+
+    const img = new Image();
+    img.onload = () => {
+      const scale = 2;    // 2× for retina/HiDPI quality
+      const padding = 60; // breathing room so Y-axis labels aren't clipped
+
+      const canvas = document.createElement("canvas");
+      canvas.width = (rect.width + padding) * scale;
+      canvas.height = (rect.height + padding) * scale;
+
+      const ctx = canvas.getContext("2d")!;
+      ctx.fillStyle = "#0a0a0a";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.scale(scale, scale);
+      ctx.drawImage(img, padding / 2, padding / 2);
+
+      URL.revokeObjectURL(url);
+
+      const a = document.createElement("a");
+      a.href = canvas.toDataURL("image/png");
+      a.download = "population_chart.png";
+      a.click();
+    };
+    img.src = url;
   };
 
   const handleTemperatureChange = (value: number) => {
@@ -538,23 +649,6 @@ export default function MicrobeGrowthLab() {
                   </button>
                 ))}
               </div>
-
-              {/* <button
-                onClick={() => handleStrainChange("custom")}
-                className={`w-full p-3 rounded-md text-left text-sm border transition-colors ${
-                  showCustomStrain
-                    ? "bg-neutral-800 border-neutral-600"
-                    : "bg-neutral-900 border-neutral-800 hover:border-neutral-700"
-                }`}
-              >
-                <div className="font-medium flex items-center gap-2">
-                  <Plus className="h-4 w-4" />
-                  Custom Strain
-                </div>
-                <div className="text-xs text-neutral-500 mt-0.5">
-                  User-defined bacteria
-                </div>
-              </button> */}
 
               <div className="mt-5 pt-4 border-t border-neutral-800">
                 <label className="text-xs font-medium text-neutral-500 block mb-2 flex items-center gap-2">
@@ -632,7 +726,6 @@ export default function MicrobeGrowthLab() {
                     />
                   </div>
 
-                  {/* Growth Rate Slider */}
                   <div>
                     <div className="flex justify-between text-sm mb-1.5">
                       <span>Growth Rate</span>
@@ -654,7 +747,6 @@ export default function MicrobeGrowthLab() {
                     />
                   </div>
 
-                  {/* Temp Slider */}
                   <div>
                     <div className="flex justify-between text-sm mb-1.5">
                       <span>Optimal Temp</span>
@@ -675,7 +767,6 @@ export default function MicrobeGrowthLab() {
                     />
                   </div>
 
-                  {/* Resistance Slider */}
                   <div>
                     <div className="flex justify-between text-sm mb-1.5">
                       <span>Resistance</span>
@@ -708,13 +799,11 @@ export default function MicrobeGrowthLab() {
               </h2>
 
               <div className="space-y-6">
-                {/* Temperature */}
                 <div>
                   <div className="flex justify-between text-sm mb-1.5">
                     <span>Temperature</span>
                     <span>{temperature}°C</span>
                   </div>
-                  {/* scroll bar */}
                   <input
                     type="range"
                     min="10"
@@ -739,13 +828,11 @@ export default function MicrobeGrowthLab() {
                   )}
                 </div>
 
-                {/* pH */}
                 <div>
                   <div className="flex justify-between text-sm mb-1.5">
                     <span>pH</span>
                     <span>{pH.toFixed(1)}</span>
                   </div>
-                  {/* scroll bar */}
                   <input
                     type="range"
                     min="5"
@@ -772,13 +859,11 @@ export default function MicrobeGrowthLab() {
                   )}
                 </div>
 
-                {/* Nutrients */}
                 <div>
                   <div className="flex justify-between text-sm mb-1.5">
                     <span>Nutrients</span>
                     <span>{Math.round(nutrients)}%</span>
                   </div>
-                  {/* scroll bar */}
                   <input
                     type="range"
                     min="0"
@@ -797,13 +882,11 @@ export default function MicrobeGrowthLab() {
                   </div>
                 </div>
 
-                {/* Oxygen */}
                 <div>
                   <div className="flex justify-between text-sm mb-1.5">
                     <span>Oxygen</span>
                     <span>{oxygen}%</span>
                   </div>
-                  {/* scroll bar */}
                   <input
                     type="range"
                     min="0"
@@ -822,7 +905,6 @@ export default function MicrobeGrowthLab() {
                   </div>
                 </div>
 
-                {/* Antibiotic */}
                 <label className="flex items-center gap-3 cursor-pointer pt-2 border-t border-neutral-800">
                   <input
                     type="checkbox"
@@ -926,13 +1008,21 @@ export default function MicrobeGrowthLab() {
 
           {/* Chart */}
           <div className="bg-neutral-950 border border-neutral-800 rounded-lg p-6 mb-8">
-            <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-              <LineChartIcon className="h-5 w-5" />
-              Population Growth
-            </h2>
+            {/* Header row with title and Export PNG button */}
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold flex items-center gap-2">
+                <LineChartIcon className="h-5 w-5" />
+                Population Growth
+              </h2>
+              <Button onClick={handleExportPNG} variant="secondary" size="sm">
+                <Download className="h-4 w-4" />
+                Export PNG
+              </Button>
+            </div>
 
             {chartData.length > 0 ? (
-              <div className="h-80">
+              // chartRef lets handleExportPNG find the SVG inside this div
+              <div className="h-80" ref={chartRef}>
                 <ResponsiveContainer width={chartSize} height={chartSize}>
                   <LineChart
                     data={chartData}
@@ -946,7 +1036,7 @@ export default function MicrobeGrowthLab() {
                       interval="preserveStartEnd"
                       minTickGap={50}
                     />
-                    <YAxis stroke="#FBFBFB" fontSize={"0.8rem"} />
+                    <YAxis stroke="#FBFBFB" fontSize={"0.8rem"} width={80} />
                     <Tooltip
                       contentStyle={{
                         backgroundColor: "#0f172a",
@@ -960,7 +1050,10 @@ export default function MicrobeGrowthLab() {
                       stroke="#FBFBFB"
                       strokeWidth={2}
                       dot={false}
-                      isAnimationActive={false}
+                      isAnimationActive={true}
+                      animationDuration={280}
+                      animationEasing="linear"
+                      animationBegin={0}
                     />
                   </LineChart>
                 </ResponsiveContainer>
@@ -971,6 +1064,7 @@ export default function MicrobeGrowthLab() {
               </div>
             )}
           </div>
+
           {/* Log */}
           <div className="bg-neutral-950 border border-neutral-800 rounded-lg p-6">
             <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
