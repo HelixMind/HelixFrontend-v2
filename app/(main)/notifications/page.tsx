@@ -59,7 +59,7 @@ export default function NotificationsPage() {
   return (
     <>
     <Sidebar />
-    <div className="flex-1 ml-16 pt-16">
+    <div className=" ml-16 pt-16">
     <Header title="Notifications" />
     <main className="p-8 bg-background min-h-screen">
       <div className="  mx-auto">

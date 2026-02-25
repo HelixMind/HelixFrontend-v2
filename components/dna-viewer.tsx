@@ -1,61 +1,70 @@
 "use client"
 
 import { useState } from "react"
-import { ChevronLeft, ChevronRight } from "lucide-react"
+import { Copy, Check } from "lucide-react"
+// lib
+import { cn } from "@/lib/utils"
 
 const DNA_SEQUENCE =
   "ATGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGC"
 
 export function DNAViewer() {
-  const [scrollPos, setScrollPos] = useState(0)
-  const chunkSize = 50
-
-  const scroll = (direction: "left" | "right") => {
-    const newPos =
-      direction === "left"
-        ? Math.max(0, scrollPos - chunkSize)
-        : Math.min(DNA_SEQUENCE.length - chunkSize, scrollPos + chunkSize)
-    setScrollPos(newPos)
-  }
-
-  const visibleSequence = DNA_SEQUENCE.slice(scrollPos, scrollPos + chunkSize)
+  const [copied, setCopied] = useState(false)
   const highlightStart = 15
   const highlightEnd = 25
 
+  const copyToClipboard = async () => {
+    try {
+      await navigator.clipboard.writeText(DNA_SEQUENCE)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch (err) {
+      console.error("Failed to copy:", err)
+    }
+  }
+
   return (
-    <div className="glass p-6 rounded-lg col-span-2">
-      <h3 className="text-lg font-semibold mb-4 ">DNA Sequence Viewer</h3>
+    <div className={cn("glass w-full p-6 rounded-lg col-span-2")}>
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-semibold">DNA Sequence Viewer</h3>
+        <button
+          onClick={copyToClipboard}
+          className="flex items-center gap-2 px-3 py-1.5 text-sm bg-primary/10 hover:bg-primary/20 border border-primary/30 rounded-lg transition-colors"
+        >
+          {copied ? (
+            <>
+              <Check className="w-4 h-4" />
+              <span>Copied!</span>
+            </>
+          ) : (
+            <>
+              <Copy className="w-4 h-4" />
+              <span>Copy</span>
+            </>
+          )}
+        </button>
+      </div>
 
-      <div className="bg-black/40 border border-border rounded-lg p-6 font-mono text-sm overflow-hidden">
-        <div className="flex items-center gap-4">
-          <button onClick={() => scroll("left")} className="p-1 hover:bg-card rounded transition-colors flex-shrink-0">
-            <ChevronLeft className="w-4 h-4" />
-          </button>
-
-          <div className="flex-1 overflow-x-auto">
-            <div className="flex gap-1 whitespace-nowrap">
-              {visibleSequence.split("").map((base, idx) => (
-                <span
-                  key={idx}
-                  className={`${
-                    idx >= highlightStart && idx < highlightEnd
-                      ? "text-primary font-bold drop-shadow-[0_0_8px_rgba(0,217,255,0.8)]"
-                      : "text-foreground"
-                  }`}
-                >
-                  {base}
-                </span>
-              ))}
-            </div>
+      <div className="bg-black/40 border border-border rounded-lg p-6 font-mono text-sm">
+        <div className="overflow-x-auto max-h-[300px] overflow-y-auto">
+          <div className="flex flex-wrap gap-1">
+            {DNA_SEQUENCE.split("").map((base, idx) => (
+              <span
+                key={idx}
+                className={`${
+                  idx >= highlightStart && idx < highlightEnd
+                    ? "text-primary font-bold drop-shadow-[0_0_8px_rgba(0,217,255,0.8)]"
+                    : "text-foreground"
+                }`}
+              >
+                {base}
+              </span>
+            ))}
           </div>
-
-          <button onClick={() => scroll("right")} className="p-1 hover:bg-card rounded transition-colors flex-shrink-0">
-            <ChevronRight className="w-4 h-4" />
-          </button>
         </div>
 
         <p className="text-xs text-muted-foreground mt-4">
-          Showing position {scrollPos + 1}-{scrollPos + chunkSize} of {DNA_SEQUENCE.length}
+          Total length: {DNA_SEQUENCE.length} base pairs
         </p>
       </div>
     </div>

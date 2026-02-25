@@ -34,7 +34,7 @@ export function Sidebar() {
     if (expanded) {
       timer = setTimeout(() => {
         setShowLabels(true);
-      }, 100);
+      }, 0);
     } else {
       setShowLabels(false);
     }
@@ -114,7 +114,7 @@ export function Sidebar() {
                   )}
                 >
                   <Icon className="w-5 h-5" />
-                  {showLabels && <span className="truncate">{item.label}</span>}
+                  {showLabels && <span className="truncate duration-200 transition-all ease-out">{item.label}</span>}
                 </Link>
               ) : (
                 <Tooltip key={item.href}>
@@ -149,7 +149,7 @@ export function Sidebar() {
             </div>
 
             {showLabels && (
-              <div className="truncate">
+              <div className="truncate animate-in slide-in-from-left transition-all duration-200 ease-linear">
                 <h3 className="flex items-center gap-2 text-lg font-semibold truncate transition-all ease-out duration-150">
                   <span className="text-sm truncate">{user?.name ?? "Guest"}</span>
                 </h3>

@@ -1,12 +1,13 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import {
   Play,
   Pause,
   RotateCcw,
   Download,
   Microscope,
+  DnaIcon,
   Plus,
   FileText,
   Thermometer,
@@ -34,6 +35,7 @@ import {
 import { Sidebar } from "@/components/sidebar";
 import { Header } from "@/components/header";
 import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 // ────────────────────────────────────────────────
 //  TYPES
@@ -293,7 +295,7 @@ export default function MicrobeGrowthLab() {
     resistance: 0.0,
   });
   const [genomeInfo, setGenomeInfo] = useState<GenomeInfo | null>(null);
-  const [chartSize, setChartSize] = useState<"99%" | "100%">("99%");
+  const [chartSize, setChartSize] = useState<"99.5%" | "100%">("99.5%");
 
   const [temperature, setTemperature] = useState(37);
   const [pH, setPH] = useState(7.0);
@@ -301,19 +303,29 @@ export default function MicrobeGrowthLab() {
   const [oxygen, setOxygen] = useState(21);
   const [antibioticOn, setAntibioticOn] = useState(false);
 
+  // Validation warnings
+  const [tempWarning, setTempWarning] = useState("");
+  const [phWarning, setPhWarning] = useState("");
+
+  // Ref attached to chart wrapper so handleExportPNG can find the SVG inside
+  const chartRef = useRef<HTMLDivElement>(null);
+
+  // Memoize chart data to prevent unnecessary re-renders
+  const chartData = useMemo(() => state.growthHistory, [state.growthHistory]);
+
   // Sync environment changes
   useEffect(() => {
     sim.updateEnvironment({ temperature, pH, nutrients, oxygen, antibioticOn });
   }, [temperature, pH, nutrients, oxygen, antibioticOn, sim]);
 
-  // Chart size oscillation effect when running
+  // Chart size oscillation effect when running - more subtle
   useEffect(() => {
     if (!isRunning) return;
-    
+
     const interval = setInterval(() => {
-      setChartSize(prev => prev === "99%" ? "100%" : "99%");
-    }, 500); // Toggle every 3 seconds
-    
+      setChartSize((prev) => (prev === "99.5%" ? "100%" : "99.5%"));
+    }, 1500);
+
     return () => clearInterval(interval);
   }, [isRunning]);
 
@@ -426,13 +438,14 @@ export default function MicrobeGrowthLab() {
     setNutrients(100);
     setOxygen(21);
     setAntibioticOn(false);
-    setChartSize("99%");
+    setChartSize("99.5%");
+    setTempWarning("");
+    setPhWarning("");
   };
 
   const handleStartPause = () => {
     if (!isRunning) {
-      // Starting simulation
-      setChartSize("99%");
+      setChartSize("99.5%");
     }
     setIsRunning(!isRunning);
   };
@@ -459,6 +472,137 @@ export default function MicrobeGrowthLab() {
     URL.revokeObjectURL(url);
   };
 
+  // ── PNG Export ──────────────────────────────────────────────────────────────
+  // How this works:
+  //  1. Find the live SVG that Recharts rendered inside chartRef
+  //  2. Deep-clone it so we never mutate what's on screen
+  //  3. Prepend a dark background rect so the export isn't transparent
+  //  4. Walk every live element, read its computed CSS, and bake those values
+  //     as inline styles onto the matching cloned element — necessary because
+  //     the serialised SVG blob has no stylesheet context
+  //  5. Second pass: force text/axis/grid colours explicitly using both
+  //     .style and setAttribute so they survive all browser renderers
+  //  6. Serialise clone → Blob → object URL → Image
+  //  7. Draw onto a 2× canvas (retina quality) with padding, then download PNG
+  // ───────────────────────────────────────────────────────────────────────────
+  const handleExportPNG = () => {
+    const svg = chartRef.current?.querySelector("svg");
+    if (!svg || chartData.length === 0) {
+      alert("Run simulation first to export chart");
+      return;
+    }
+
+    const cloned = svg.cloneNode(true) as SVGElement;
+    cloned.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+
+    // Capture rendered size before touching the clone
+    const rect = svg.getBoundingClientRect();
+
+    // Dark background rect so the PNG isn't transparent
+    const bg = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+    bg.setAttribute("width", "100%");
+    bg.setAttribute("height", "100%");
+    bg.setAttribute("fill", "#0a0a0a");
+    cloned.insertBefore(bg, cloned.firstChild);
+
+    // Bake computed styles — without this the blob SVG loses all colour
+    svg.querySelectorAll("*").forEach((el, i) => {
+      const computed = window.getComputedStyle(el);
+      const target = cloned.querySelectorAll("*")[i] as SVGElement;
+      [
+        "fill", "stroke", "stroke-width", "stroke-dasharray",
+        "font-size", "font-family", "text-anchor", "dominant-baseline",
+      ].forEach((prop) => {
+        const val = computed.getPropertyValue(prop);
+        if (val) target.style.setProperty(prop, val);
+      });
+    });
+
+    // Force text to be visible on the dark background
+    cloned.querySelectorAll("text, tspan").forEach((el) => {
+      (el as SVGElement).style.fill = "#FBFBFB";
+      (el as SVGElement).setAttribute("fill", "#FBFBFB");
+    });
+
+    // Axis lines
+    cloned
+      .querySelectorAll(".recharts-cartesian-axis-line, .recharts-cartesian-axis-tick-line")
+      .forEach((el) => {
+        (el as SVGElement).style.stroke = "#FBFBFB";
+        (el as SVGElement).setAttribute("stroke", "#FBFBFB");
+      });
+
+    // Subtle grid lines
+    cloned
+      .querySelectorAll(
+        ".recharts-cartesian-grid-horizontal line, .recharts-cartesian-grid-vertical line"
+      )
+      .forEach((el) => {
+        (el as SVGElement).style.stroke = "#404040";
+        (el as SVGElement).setAttribute("stroke", "#404040");
+      });
+
+    // Data line — white, no fill flood
+    cloned.querySelectorAll(".recharts-line-curve").forEach((el) => {
+      (el as SVGElement).style.stroke = "#FBFBFB";
+      (el as SVGElement).style.strokeWidth = "2";
+      (el as SVGElement).style.fill = "none";
+      (el as SVGElement).setAttribute("stroke", "#FBFBFB");
+      (el as SVGElement).setAttribute("fill", "none");
+    });
+
+    const svgBlob = new Blob([cloned.outerHTML], {
+      type: "image/svg+xml;charset=utf-8",
+    });
+    const url = URL.createObjectURL(svgBlob);
+
+    const img = new Image();
+    img.onload = () => {
+      const scale = 2;    // 2× for retina/HiDPI quality
+      const padding = 60; // breathing room so Y-axis labels aren't clipped
+
+      const canvas = document.createElement("canvas");
+      canvas.width = (rect.width + padding) * scale;
+      canvas.height = (rect.height + padding) * scale;
+
+      const ctx = canvas.getContext("2d")!;
+      ctx.fillStyle = "#0a0a0a";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.scale(scale, scale);
+      ctx.drawImage(img, padding / 2, padding / 2);
+
+      URL.revokeObjectURL(url);
+
+      const a = document.createElement("a");
+      a.href = canvas.toDataURL("image/png");
+      a.download = "population_chart.png";
+      a.click();
+    };
+    img.src = url;
+  };
+
+  const handleTemperatureChange = (value: number) => {
+    setTemperature(value);
+    if (value < 10) {
+      setTempWarning("Temperature too low - min 10°C");
+    } else if (value > 46) {
+      setTempWarning("Temperature too high - max 46°C");
+    } else {
+      setTempWarning("");
+    }
+  };
+
+  const handlePHChange = (value: number) => {
+    setPH(value);
+    if (value < 5) {
+      setPhWarning("pH too low - min 5.0");
+    } else if (value > 9) {
+      setPhWarning("pH too high - max 9.0");
+    } else {
+      setPhWarning("");
+    }
+  };
+
   const getStressClass = (level: number): string => {
     if (level < 0.3) return "bg-neutral-700 text-neutral-300";
     if (level < 0.7) return "bg-neutral-600 text-neutral-200";
@@ -470,16 +614,16 @@ export default function MicrobeGrowthLab() {
     : STRAINS[selectedStrain];
 
   return (
-    <div className="flex w-full">
+    <div className="space-x-8">
       <Sidebar />
-      <div className="flex-1 ml-16 pt-16">
+      <div className="ml-16 pt-16">
         <Header title="Microbe Growth Lab" />
-        <div className="min-h-screen bg-black text-neutral-200 p-6">
+        <main className="mx-auto max-w-7xl container pt-8 bg-background min-w-full min-h-screen space-y-8">
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
             {/* Strain Selection */}
             <div className="bg-neutral-950 border border-neutral-800 rounded-lg p-6">
               <h2 className="text-lg font-semibold mb-5 flex items-center gap-2">
-                <Microscope className="h-5 w-5" />
+                <DnaIcon className="h-5 w-5" />
                 Strain
               </h2>
 
@@ -490,38 +634,21 @@ export default function MicrobeGrowthLab() {
                     onClick={() => handleStrainChange(key)}
                     className={`w-full p-3 rounded-md text-left text-sm border transition-colors ${
                       selectedStrain === key && !showCustomStrain
-                        ? "bg-neutral-800 border-neutral-600"
-                        : "bg-neutral-900 border-neutral-800 hover:border-neutral-700"
+                        ? "bg-neutral-800 border-neutral-200"
+                        : "bg-neutral-900 border-neutral-00 hover:border-neutral-200"
                     }`}
                   >
                     <div className="font-medium">{strain.name}</div>
-                    <div className="text-xs text-neutral-500 mt-0.5">
+                    <div className="text-xs text-neutral-300 mt-0.5">
                       {strain.description}
                     </div>
-                    <div className="text-xs text-neutral-600 mt-1">
+                    <div className="text-xs text-neutral-400 mt-1">
                       Growth: {(strain.growthRate * 100).toFixed(0)}% • Resist:{" "}
                       {(strain.resistance * 100).toFixed(0)}%
                     </div>
                   </button>
                 ))}
               </div>
-
-              <button
-                onClick={() => handleStrainChange("custom")}
-                className={`w-full p-3 rounded-md text-left text-sm border transition-colors ${
-                  showCustomStrain
-                    ? "bg-neutral-800 border-neutral-600"
-                    : "bg-neutral-900 border-neutral-800 hover:border-neutral-700"
-                }`}
-              >
-                <div className="font-medium flex items-center gap-2">
-                  <Plus className="h-4 w-4" />
-                  Custom Strain
-                </div>
-                <div className="text-xs text-neutral-500 mt-0.5">
-                  User-defined bacteria
-                </div>
-              </button>
 
               <div className="mt-5 pt-4 border-t border-neutral-800">
                 <label className="text-xs font-medium text-neutral-500 block mb-2 flex items-center gap-2">
@@ -599,7 +726,6 @@ export default function MicrobeGrowthLab() {
                     />
                   </div>
 
-                  {/* Growth Rate Slider */}
                   <div>
                     <div className="flex justify-between text-sm mb-1.5">
                       <span>Growth Rate</span>
@@ -621,7 +747,6 @@ export default function MicrobeGrowthLab() {
                     />
                   </div>
 
-                  {/* Temp Slider */}
                   <div>
                     <div className="flex justify-between text-sm mb-1.5">
                       <span>Optimal Temp</span>
@@ -642,7 +767,6 @@ export default function MicrobeGrowthLab() {
                     />
                   </div>
 
-                  {/* Resistance Slider */}
                   <div>
                     <div className="flex justify-between text-sm mb-1.5">
                       <span>Resistance</span>
@@ -675,7 +799,6 @@ export default function MicrobeGrowthLab() {
               </h2>
 
               <div className="space-y-6">
-                {/* Temperature */}
                 <div>
                   <div className="flex justify-between text-sm mb-1.5">
                     <span>Temperature</span>
@@ -686,12 +809,25 @@ export default function MicrobeGrowthLab() {
                     min="10"
                     max="46"
                     value={temperature}
-                    onChange={(e) => setTemperature(Number(e.target.value))}
-                    className="w-full h-1.5 bg-neutral-800 rounded-full appearance-none cursor-pointer accent-neutral-500"
+                    onChange={(e) => handleTemperatureChange(Number(e.target.value))}
+                    className="w-full flex-1 accent-primary disabled:opacity-50 cursor-grab"
                   />
+                  <div className="flex items-center gap-2 mt-2">
+                    <input
+                      type="number"
+                      value={temperature}
+                      onChange={(e) => handleTemperatureChange(Number(e.target.value))}
+                      className="w-full bg-neutral-900 border border-neutral-800 rounded px-3 py-2 text-sm focus:outline-none focus:border-neutral-600"
+                    />
+                  </div>
+                  {tempWarning && (
+                    <p className="text-xs text-red-400 mt-1 flex items-center gap-1">
+                      <AlertTriangle className="h-3 w-3" />
+                      {tempWarning}
+                    </p>
+                  )}
                 </div>
 
-                {/* pH */}
                 <div>
                   <div className="flex justify-between text-sm mb-1.5">
                     <span>pH</span>
@@ -703,12 +839,26 @@ export default function MicrobeGrowthLab() {
                     max="9"
                     step="0.1"
                     value={pH}
-                    onChange={(e) => setPH(Number(e.target.value))}
-                    className="w-full h-1.5 bg-neutral-800 rounded-full appearance-none cursor-pointer accent-neutral-500"
+                    onChange={(e) => handlePHChange(Number(e.target.value))}
+                    className="w-full flex-1 accent-primary disabled:opacity-50 cursor-grab"
                   />
+                  <div className="flex items-center gap-2 mt-2">
+                    <input
+                      type="number"
+                      step="0.1"
+                      value={pH}
+                      onChange={(e) => handlePHChange(Number(e.target.value))}
+                      className="w-full bg-neutral-900 border border-neutral-800 rounded px-3 py-2 text-sm focus:outline-none focus:border-neutral-600"
+                    />
+                  </div>
+                  {phWarning && (
+                    <p className="text-xs text-red-400 mt-1 flex items-center gap-1">
+                      <AlertTriangle className="h-3 w-3" />
+                      {phWarning}
+                    </p>
+                  )}
                 </div>
 
-                {/* Nutrients */}
                 <div>
                   <div className="flex justify-between text-sm mb-1.5">
                     <span>Nutrients</span>
@@ -720,11 +870,18 @@ export default function MicrobeGrowthLab() {
                     max="100"
                     value={nutrients}
                     onChange={(e) => setNutrients(Number(e.target.value))}
-                    className="w-full h-1.5 bg-neutral-800 rounded-full appearance-none cursor-pointer accent-neutral-500"
+                    className="w-full flex-1 accent-primary disabled:opacity-50 cursor-grab"
                   />
+                  <div className="flex items-center gap-2 mt-2">
+                    <input
+                      type="number"
+                      value={Math.round(nutrients)}
+                      onChange={(e) => setNutrients(Number(e.target.value))}
+                      className="w-full bg-neutral-900 border border-neutral-800 rounded px-3 py-2 text-sm focus:outline-none focus:border-neutral-600"
+                    />
+                  </div>
                 </div>
 
-                {/* Oxygen */}
                 <div>
                   <div className="flex justify-between text-sm mb-1.5">
                     <span>Oxygen</span>
@@ -736,11 +893,18 @@ export default function MicrobeGrowthLab() {
                     max="100"
                     value={oxygen}
                     onChange={(e) => setOxygen(Number(e.target.value))}
-                    className="w-full h-1.5 bg-neutral-800 rounded-full appearance-none cursor-pointer accent-neutral-500"
+                    className="w-full flex-1 accent-primary disabled:opacity-50 cursor-grab"
                   />
+                  <div className="flex items-center gap-2 mt-2">
+                    <input
+                      type="number"
+                      value={oxygen}
+                      onChange={(e) => setOxygen(Number(e.target.value))}
+                      className="w-full bg-neutral-900 border border-neutral-800 rounded px-3 py-2 text-sm focus:outline-none focus:border-neutral-600"
+                    />
+                  </div>
                 </div>
 
-                {/* Antibiotic */}
                 <label className="flex items-center gap-3 cursor-pointer pt-2 border-t border-neutral-800">
                   <input
                     type="checkbox"
@@ -811,33 +975,32 @@ export default function MicrobeGrowthLab() {
                 </div>
 
                 <div className="pt-4 space-y-3 border-t border-neutral-800">
-                  <button
-                    onClick={handleStartPause}
-                    className="w-full bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-neutral-200 font-medium py-2.5 rounded-md flex items-center justify-center gap-2 transition-colors"
-                  >
+                  <Button onClick={handleStartPause} className="w-full">
                     {isRunning ? (
                       <Pause className="h-5 w-5" />
                     ) : (
                       <Play className="h-5 w-5" />
                     )}
                     {isRunning ? "Pause" : "Start"}
-                  </button>
+                  </Button>
 
-                  <button
+                  <Button
                     onClick={handleReset}
-                    className="w-full bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-neutral-300 font-medium py-2.5 rounded-md flex items-center justify-center gap-2 transition-colors"
+                    variant="secondary"
+                    className="w-full"
                   >
                     <RotateCcw className="h-5 w-5" />
                     Reset
-                  </button>
+                  </Button>
 
-                  <button
+                  <Button
                     onClick={handleExport}
-                    className="w-full bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-neutral-300 font-medium py-2.5 rounded-md flex items-center justify-center gap-2 transition-colors"
+                    variant="secondary"
+                    className="w-full"
                   >
                     <Download className="h-5 w-5" />
                     Export CSV
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>
@@ -845,18 +1008,35 @@ export default function MicrobeGrowthLab() {
 
           {/* Chart */}
           <div className="bg-neutral-950 border border-neutral-800 rounded-lg p-6 mb-8">
-            <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-              <LineChartIcon className="h-5 w-5" />
-              Population Growth
-            </h2>
+            {/* Header row with title and Export PNG button */}
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold flex items-center gap-2">
+                <LineChartIcon className="h-5 w-5" />
+                Population Growth
+              </h2>
+              <Button onClick={handleExportPNG} variant="secondary" size="sm">
+                <Download className="h-4 w-4" />
+                Export PNG
+              </Button>
+            </div>
 
-            {state.growthHistory.length > 0 ? (
-              <div className="h-80">
+            {chartData.length > 0 ? (
+              // chartRef lets handleExportPNG find the SVG inside this div
+              <div className="h-80" ref={chartRef}>
                 <ResponsiveContainer width={chartSize} height={chartSize}>
-                  <LineChart data={state.growthHistory}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
-                    <XAxis dataKey="time" stroke="#4b5563" />
-                    <YAxis stroke="#4b5563" />
+                  <LineChart
+                    data={chartData}
+                    className="transition-all duration-1000 ease-in-out"
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="#404040" />
+                    <XAxis
+                      dataKey="time"
+                      stroke="#FBFBFB"
+                      fontSize={"0.8rem"}
+                      interval="preserveStartEnd"
+                      minTickGap={50}
+                    />
+                    <YAxis stroke="#FBFBFB" fontSize={"0.8rem"} width={80} />
                     <Tooltip
                       contentStyle={{
                         backgroundColor: "#0f172a",
@@ -867,10 +1047,13 @@ export default function MicrobeGrowthLab() {
                     <Line
                       type="monotone"
                       dataKey="population"
-                      stroke="#6b7280"
+                      stroke="#FBFBFB"
                       strokeWidth={2}
                       dot={false}
-                      isAnimationActive={false}
+                      isAnimationActive={true}
+                      animationDuration={280}
+                      animationEasing="linear"
+                      animationBegin={0}
                     />
                   </LineChart>
                 </ResponsiveContainer>
@@ -888,7 +1071,7 @@ export default function MicrobeGrowthLab() {
               <Clock className="h-5 w-5" />
               Adaptation Log
             </h2>
-            <div className="bg-black rounded p-4 h-48 overflow-y-auto text-sm font-mono text-neutral-400 space-y-1 border border-neutral-900">
+            <ScrollArea className="bg-black rounded p-4 h-48 text-sm font-mono text-neutral-400 space-y-1 border border-neutral-900">
               {state.adaptationLog.length === 0 ? (
                 <p className="text-neutral-600">Simulation not started yet.</p>
               ) : (
@@ -896,9 +1079,9 @@ export default function MicrobeGrowthLab() {
                   <div key={i}>{entry}</div>
                 ))
               )}
-            </div>
+            </ScrollArea>
           </div>
-        </div>
+        </main>
       </div>
     </div>
   );

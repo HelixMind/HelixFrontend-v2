@@ -38,14 +38,14 @@ export default function Settings() {
   const {user} = useAuth();
 
   return (
-    <div className="flex">
+    <div>
       <Sidebar />
-      <div className="flex-1 ml-16 pt-16">
+      <div className="ml-16 pt-16">
         <Header title="Settings" />
 
-        <main className="w-full max-w-6xl p-8 bg-background min-h-screen space-y-8">
+        <main className="mx-auto max-w-7xl container pt-8 bg-background min-w-full min-h-screen space-y-8">
           {/* Profile Card */}
-          <Card>
+          <Card className="px-0">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <User className="w-5 h-5" />
@@ -84,7 +84,7 @@ export default function Settings() {
                   <Input
                     value={user?.name ?? "Guest"}
                     readOnly
-                    className="mt-1 truncate"
+                    className="mt-1 truncate focus-visible:border-0 focus-visible:ring-ring/0 focus-visible:ring-[0px]"
                   />
                 </div>
                 <div>
@@ -94,13 +94,13 @@ export default function Settings() {
                   <Input
                     value={user?.email ?? ""}
                     readOnly
-                    className="mt-1 truncate"
+                    className="mt-1 truncate focus-visible:border-0 focus-visible:ring-ring/0 focus-visible:ring-[0px]"
                   />
                 </div>
               </div>
 
               {/* Edit Information */}
-              <div className="pt-4 border-t border-border grid grid-cols-1 sm:grid-cols-2 items-center gap-4">
+              {/* <div className="pt-4 border-t border-border grid grid-cols-1 sm:grid-cols-2 items-center gap-4">
                 <div>
                   <h3 className="flex items-center gap-2 text-lg font-semibold truncate">
                     Update Your Profile
@@ -113,19 +113,19 @@ export default function Settings() {
                 <div>
                   <Button>Update Information</Button>
                 </div>
-              </div>
+              </div> */}
             </CardContent>
           </Card>
 
           {/* API & Account Settings Card */}
-          <Card>
+          {/* <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Key className="w-5 h-5" />
                 Account Settings
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-6">
+            <CardContent className="space-y-6"> */}
               {/* API Key */}
               {/* <div>
                 <label className="text-sm text-muted-foreground block mb-2">
@@ -136,14 +136,14 @@ export default function Settings() {
                     type="password"
                     value={settings.apiKey}
                     readOnly
-                    className="flex-1 truncate"
+                    className=" truncate"
                   />
                   <Button>Regenerate</Button>
                 </div>
               </div> */}
 
               {/* Data Retention */}
-              <div>
+              {/* <div>
                 <label className="text-sm text-muted-foreground block mb-2">
                   Data Retention (days)
                 </label>
@@ -158,10 +158,10 @@ export default function Settings() {
                   }
                   className="w-full"
                 />
-              </div>
+              </div> */}
 
               {/* Theme Selection */}
-              <div>
+              {/* <div>
                 <label className="text-sm text-muted-foreground block mb-2">
                   Theme
                 </label>
@@ -178,10 +178,10 @@ export default function Settings() {
                     </Button>
                   ))}
                 </div>
-              </div>
+              </div> */}
 
               {/* Notifications */}
-              <div className="flex items-center gap-3">
+              {/*<div className="flex items-center gap-3">
                 <input
                   type="checkbox"
                   checked={settings.notifications}
@@ -193,9 +193,9 @@ export default function Settings() {
                 <label className="text-sm text-foreground cursor-pointer">
                   Enable notifications
                 </label>
-              </div>
+              </div> */}
 
-              <div className="flex items-center gap-3">
+{/*               <div className="flex items-center gap-3">
                 <input
                   type="checkbox"
                   checked={settings.emailNotifications}
@@ -215,12 +215,12 @@ export default function Settings() {
               >
                 <Save className="w-4 h-4" />
                 Save Settings
-              </Button>
-            </CardContent>
-          </Card>
+              </Button> */}
+            {/* </CardContent>
+          </Card> */}
 
           {/* Danger Zone Card */}
-          <Card>
+          {/* <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-red-500">
                 <AlertTriangle className="w-5 h-5" />
@@ -235,7 +235,7 @@ export default function Settings() {
                 Delete All Data
               </Button>
             </CardContent>
-          </Card>
+          </Card> */}
         </main>
       </div>
     </div>
