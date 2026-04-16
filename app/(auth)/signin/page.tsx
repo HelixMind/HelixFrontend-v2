@@ -96,7 +96,7 @@ export default function SignInPage() {
                   placeholder="name@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  autoComplete="current-password"
+                  autoComplete="username"
                 />
               </div>
 
