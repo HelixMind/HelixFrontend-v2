@@ -129,6 +129,8 @@ export default function signupPage() {
                 <label className="text-sm font-medium">Full Name</label>
                 <Input
                   type="text"
+                  name="name"
+                  autoComplete="name"
                   placeholder="John Doe"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
@@ -140,6 +142,8 @@ export default function signupPage() {
                 <Input
                   type="email"
                   placeholder="name@example.com"
+                  name="email"
+                  autoComplete="new-password"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                 />
@@ -151,6 +155,8 @@ export default function signupPage() {
                   <Input
                     type={showPassword ? "text" : "password"}
                     placeholder="Create a password"
+                    name="password"
+                    autoComplete="new-password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="pr-10"
@@ -181,6 +187,8 @@ export default function signupPage() {
                 <label className="text-sm font-medium">Confirm Password</label>
                 <Input
                   type="password"
+                  name="confirm-password"
+                  autoComplete="new-passowrd"
                   placeholder="Confirm your password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}

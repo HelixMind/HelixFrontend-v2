@@ -92,10 +92,11 @@ export default function SignInPage() {
                 <label className="text-sm font-medium">Email</label>
                 <Input
                   type="email"
+                  name="email"
                   placeholder="name@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  autoComplete="email"
+                  autoComplete="current-password"
                 />
               </div>
 
@@ -106,6 +107,7 @@ export default function SignInPage() {
                     type={showPassword ? "text" : "password"}
                     placeholder="Enter your password"
                     value={password}
+                    name="password"
                     onChange={(e) => setPassword(e.target.value)}
                     autoComplete="current-password"
                     className="pr-10"
