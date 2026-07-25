@@ -358,12 +358,6 @@ type MutationClassification = "synonymous" | "missense" | "nonsense" | "frameshi
 type ACMGClass = "benign" | "likely_benign" | "uncertain" | "likely_pathogenic" | "pathogenic";
 type SimulationSpeed = "animated" | "fast" | "instant";
 
-type GenomicMapEntry = {
-  seqPos: number;
-  chrom: string;
-  pos: number;
-};
-
 interface PathogenicityScore {
   score: number;
   alphaMissense: number;
@@ -744,25 +738,33 @@ export default function MutationSimulator() {
     const genMuts: MutationData[] = [];
     let recurrentCount = 0;
 
+    // NOTE: 'start' and 'end' follow the standard genome-browser convention (Ensembl /
+    // RefSeq / UCSC): start is ALWAYS the lower genomic coordinate and end ALWAYS the
+    // higher one, regardless of strand. Strand only controls which end of that range
+    // corresponds to seqIndex 0 (the 5' base of the uploaded sequence) — on '+' strand
+    // that's the low coordinate (start); on '-' strand that's the high coordinate (end),
+    // with genomic position decreasing as seqIndex increases. This avoids requiring the
+    // user to flip which field they call "start" depending on strand, which is an easy
+    // way to silently feed in the wrong locus.
     const deriveGenomicCoordinate = (seqIndex: number, length = 1): string | undefined => {
       const chrom = params.genomicChrom.trim();
       const start = parseInt(params.genomicStart, 10);
       const end = parseInt(params.genomicEnd, 10);
       const strand = params.genomicStrand;
-      if (!chrom || Number.isNaN(start) || Number.isNaN(end) || (strand !== "+" && strand !== "-")) return undefined;
+      if (!chrom || Number.isNaN(start) || Number.isNaN(end) || end < start || (strand !== "+" && strand !== "-")) return undefined;
       const seqLen = curSeq.length;
-      const genomicSpan = Math.abs(end - start) + 1;
+      const genomicSpan = end - start + 1;
       if (genomicSpan < seqLen) return undefined;
       const seqStart = seqIndex;
       const seqEnd = seqIndex + length - 1;
       if (seqStart < 0 || seqEnd >= seqLen) return undefined;
-      const startPos = strand === "+" ? start + seqStart : start - seqStart;
-      const endPos = strand === "+" ? start + seqEnd : start - seqEnd;
-      if ((strand === "+" && (startPos > end || endPos > end)) || (strand === "-" && (startPos < end || endPos < end))) return undefined;
-      if (length === 1) return `${chrom}:${startPos}`;
-      const low = Math.min(startPos, endPos);
-      const high = Math.max(startPos, endPos);
-      return `${chrom}:${low}-${high}`;
+      const posAt = (idx: number) => (strand === "+" ? start + idx : end - idx);
+      const posA = posAt(seqStart);
+      const posB = posAt(seqEnd);
+      const low = Math.min(posA, posB);
+      const high = Math.max(posA, posB);
+      if (low < start || high > end) return undefined;
+      return length === 1 ? `${chrom}:${posA}` : `${chrom}:${low}-${high}`;
     };
 
     const applySubstitution = (i: number, newBase: string, type: "substitution") => {
@@ -928,8 +930,13 @@ export default function MutationSimulator() {
       const genomicCoordinate = deriveGenomicCoordinate(bStart, blockLen);
 
       if (rng.next() < 0.5) {
+        // A genomic inversion flips a double-stranded segment end-for-end. Reading the
+        // SAME strand 5'->3' through the flipped segment yields the reverse COMPLEMENT
+        // of the original — reversing without complementing is not what an inversion
+        // actually produces.
+        const complement: Record<string, string> = { A: "T", T: "A", C: "G", G: "C" };
         const block = seqArr.slice(bStart, bStart + blockLen);
-        const inverted = block.slice().reverse();
+        const inverted = block.slice().reverse().map(b => complement[b] ?? b);
         seqArr.splice(bStart, blockLen, ...inverted);
         const mutData: Omit<MutationData, "pathogenicity"> = {
           generation: g+1, position: bStart, type:"inversion",
@@ -943,10 +950,15 @@ export default function MutationSimulator() {
         };
         genMuts.push({ ...mutData, pathogenicity: buildPathogenicity(mutData, curSeq.length, [...prevMuts, ...genMuts]) });
       } else if (seqArr.length - blockLen > 30) {
-        let dest = Math.floor(rng.next() * Math.max(1, seqArr.length - blockLen));
-        if (dest === bStart) dest = (dest + blockLen + 10) % seqArr.length;
+        // Excise first, then pick the destination in the now-shortened array. Choosing
+        // the destination in the pre-splice index space and back-converting it (the
+        // previous approach) can produce a negative index whenever the chosen destination
+        // falls inside or just past the excised block — e.g. bStart=5, blockLen=30,
+        // dest=20 previously computed insertAt = 20-30 = -10. Post-splice selection
+        // avoids that class of bug entirely.
         const block = seqArr.splice(bStart, blockLen);
-        const insertAt = dest > bStart ? dest - blockLen : dest;
+        let insertAt = Math.floor(rng.next() * Math.max(1, seqArr.length));
+        if (insertAt === bStart) insertAt = (insertAt + 10) % Math.max(1, seqArr.length);
         seqArr.splice(insertAt, 0, ...block);
         const newCoord = deriveGenomicCoordinate(insertAt, blockLen);
         const mutData: Omit<MutationData, "pathogenicity"> = {
@@ -1002,7 +1014,14 @@ export default function MutationSimulator() {
         const [chrom, coordPart] = mut.genomicCoordinate.split(":");
         const genomicPos = coordPart ? parseInt(coordPart.split("-")[0], 10) : NaN;
         if (chrom && !Number.isNaN(genomicPos)) {
-          gnomadVariantId = `${chrom}-${genomicPos}-${mut.original}-${mut.mutated}`;
+          // gnomAD variant IDs are always given on the reference (+) genomic strand.
+          // The uploaded sequence's bases are in the sequence's OWN orientation, so on
+          // a minus-strand locus they must be complemented before use as ref/alt —
+          // otherwise this silently queries the wrong allele.
+          const complementBase: Record<string, string> = { A: "T", T: "A", C: "G", G: "C" };
+          const refAllele = params.genomicStrand === "-" ? (complementBase[mut.original] ?? mut.original) : mut.original;
+          const altAllele = params.genomicStrand === "-" ? (complementBase[mut.mutated] ?? mut.mutated) : mut.mutated;
+          gnomadVariantId = `${chrom}-${genomicPos}-${refAllele}-${altAllele}`;
         }
       }
 
@@ -1020,7 +1039,7 @@ export default function MutationSimulator() {
     } finally {
       setApiLoading(false);
     }
-  }, [fastaHeader, params.genomicChrom, params.genomicStart]);
+  }, [fastaHeader, params.genomicChrom, params.genomicStart, params.genomicEnd, params.genomicStrand]);
 
   useEffect(() => {
     if (!isRunning) return;
@@ -1214,7 +1233,9 @@ export default function MutationSimulator() {
               {!hasGenomicAnchor && (
                 <div style={{ fontSize:11, color:"#88a0b9", marginTop:6 }}>
                   Without a complete genomic range and strand, gnomAD AF can't be honestly looked up — this tool won't guess.
-                  Provide chromosome, strand, and locus span to enable numeric genomic coordinate liftover.
+                  Start must always be the lower genomic coordinate and end the higher one (standard Ensembl/RefSeq/UCSC
+                  convention) — strand alone indicates reading direction; don't swap start/end for minus-strand loci.
+                  Also assumes the uploaded sequence is a single contiguous genomic span with no introns/splicing.
                 </div>
               )}
             </div>
