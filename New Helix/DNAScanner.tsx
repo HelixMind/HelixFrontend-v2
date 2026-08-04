@@ -452,28 +452,36 @@ export default function DNAScanner() {
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-    if (event.target.id === "fasta_file") set_fasta_file(file);
-    if (event.target.id === "reference_file") set_reference_file(file);
+
+    if (event.target.id === "fasta_file") {
+      set_fasta_file(file);
+      // Auto-run: as soon as the target FASTA is picked, run the full scan.
+      // Pass the file directly (not the state var) since state updates are async.
+      runFullScan(file, reference_file);
+    }
+    if (event.target.id === "reference_file") {
+      set_reference_file(file);
+      // If a target is already loaded, re-run so the new reference is
+      // reflected in the mutation/alignment results immediately.
+      if (fasta_file) runFullScan(fasta_file, file);
+    }
   };
 
-  const handleBatchFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(event.target.files || []);
-    setBatchFiles(files);
-  };
-
-  const handleRunScan = async () => {
-    if (!fasta_file) return;
+  // Extracted from the old button-click handler so it can run on upload,
+  // taking files as direct arguments rather than relying on state that
+  // hasn't finished updating yet.
+  const runFullScan = async (targetFile: File, refFile?: File) => {
     setIsScanning(true);
     setOrganismHits([]);
 
-    const fastaText = await fasta_file.text();
+    const fastaText = await targetFile.text();
     const parsedTargets = parseFasta(fastaText);
     setTargetSequences(parsedTargets);
     setSelectedTargetId(parsedTargets[0]?.id || "");
 
     let refSeq: FastaSequence | null = null;
-    if (reference_file) {
-      const refText = await reference_file.text();
+    if (refFile) {
+      const refText = await refFile.text();
       const parsedRefs = parseFasta(refText);
       refSeq = parsedRefs[0] || null;
       setReferenceSequence(refSeq);
@@ -493,6 +501,11 @@ export default function DNAScanner() {
     }
 
     setIsScanning(false);
+  };
+
+  const handleBatchFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || []);
+    setBatchFiles(files);
   };
 
   const handleIdentifyOrganism = async () => {
@@ -656,8 +669,13 @@ export default function DNAScanner() {
           )}
 
           <div className="flex gap-3">
-            <Button onClick={handleRunScan} disabled={isScanning || !fasta_file} className="flex-1 py-4 font-bold">
-              {isScanning ? "Scanning..." : "Run DNA Scan"}
+            <Button
+              onClick={() => fasta_file && runFullScan(fasta_file, reference_file)}
+              disabled={isScanning || !fasta_file}
+              variant="outline"
+              className="flex-1 py-4 font-bold"
+            >
+              {isScanning ? "Scanning..." : "Re-run Scan"}
             </Button>
             {batchFiles.length > 0 && (
               <Button onClick={handleRunBatch} disabled={isScanning} variant="outline" className="py-4">
