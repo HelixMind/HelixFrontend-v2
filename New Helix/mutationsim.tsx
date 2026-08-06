@@ -96,6 +96,9 @@ const isRadicalChange = (from: string, to: string): boolean => {
 };
 
 // ==================== ESM1b PROXY SCORING ====================
+// DISCLOSURE: this is NOT real ESM1b model inference. It is a heuristic proxy built from
+// BLOSUM62 substitution scores + conservation weighting, used as a stand-in when no live
+// model endpoint is available. Do not present this as calibrated to a citable correlation.
 const computeESM1bProxy = (fromAA: string, toAA: string, conservation: number): number => {
   if (!fromAA || !toAA || fromAA === toAA || !BLOSUM62[fromAA]) return 0;
   const rawScore = BLOSUM62[fromAA][toAA] ?? -4;
@@ -104,6 +107,12 @@ const computeESM1bProxy = (fromAA: string, toAA: string, conservation: number): 
 };
 
 // ==================== AlphaMissense PROXY ====================
+// DISCLOSURE: this is NOT the real AlphaMissense model. Real AlphaMissense is missense-only
+// (it is not trained or evaluated on nonsense/frameshift variants). This proxy is a heuristic
+// (conservation × BLOSUM62-derived score × chemical severity), not live model inference.
+// Real AlphaMissense's published operating thresholds are <0.34 likely benign, 0.34-0.564
+// ambiguous, >0.564 likely pathogenic — the 5-tier ACMG-style breakdown elsewhere in this file
+// is a separate, proprietary heuristic layered on top, not an official AM or ACMG mapping.
 const computeAlphaMissenseProxy = (
   fromAA: string, toAA: string, conservation: number, position: number, seqLen: number
 ): number => {
@@ -124,6 +133,9 @@ const estimateConservation = (position: number, seqLength: number): number => {
 };
 
 // ==================== EPISTASIS ====================
+// DISCLOSURE: real epistasis depends on 3D structural proximity, not linear sequence
+// distance. This linear-distance heuristic is a simplification for simulation purposes
+// only and is not derived from or validated against a specific epistasis dataset.
 type EpistasisType = "additive" | "synergistic" | "antagonistic" | "neutral";
 const assessEpistasis = (pos1: number, cls1: string, pos2: number, cls2: string): EpistasisType => {
   if (Math.abs(pos1 - pos2) < 9) {
@@ -353,6 +365,11 @@ interface MutationData {
   pathogenicity: PathogenicityScore;
   genomicCoordinate?: string;
   isRecurrent: boolean;
+  // Set when a later structural event (deletion or CNV deletion) removed the exact base
+  // this mutation occurred at. `position` is left at its last-known value for reference,
+  // but no longer corresponds to a real base in the current sequence — the UI should not
+  // draw a highlight for it.
+  positionStale?: boolean;
 }
 
 interface GenerationStats {
@@ -417,6 +434,8 @@ const parseFASTA = (text: string): Record<string, string> => {
   return sequences;
 };
 
+// Ti:Tv = 2:1. Reasonable whole-genome-average reference point; coding regions typically
+// skew closer to ~3:1 — treated here as one grounded reference, not a universal constant.
 const getMutatedBase = (orig: string, rng: SeededRandom): string => {
   const ti: Record<string, string> = { A:"G", G:"A", C:"T", T:"C" };
   const tv: Record<string, string[]> = { A:["C","T"], G:["C","T"], C:["A","G"], T:["A","G"] };
@@ -432,6 +451,25 @@ const classifyCodonChange = (orig: string, neo: string): MutationClassification 
   if (!newAA || newAA === "*") return "nonsense";
   return "missense";
 };
+
+// Remaps the `.position` field of every mutation in `muts` (mutating the objects in place)
+// according to `transform`. `transform` returns the new index, or null if the base that
+// mutation originally occurred at was itself removed by this structural event (in which
+// case the mutation is flagged `positionStale` rather than given a bogus coordinate).
+// This must be called immediately after ANY operation that inserts, deletes, reorders, or
+// reflows array indices (indels, CNV, inversion, translocation) — otherwise every
+// previously recorded mutation's `.position` silently drifts out of sync with where that
+// base actually lives in the current sequence.
+function remapPositions(muts: MutationData[], transform: (pos: number) => number | null) {
+  for (const m of muts) {
+    const newPos = transform(m.position);
+    if (newPos === null) {
+      m.positionStale = true;
+    } else {
+      m.position = newPos;
+    }
+  }
+}
 
 const buildPathogenicity = (
   mutation: Omit<MutationData, "pathogenicity" | "isRecurrent">,
@@ -462,15 +500,15 @@ const buildPathogenicity = (
   if (classification === "nonsense") {
     score = 0.93 + (position / seqLen < 0.8 ? 0.05 : 0);
     evidence.push("Premature stop codon — PVS1 criterion (ACMG)");
-    evidence.push("Note: AlphaMissense does not score nonsense variants — score above is a heuristic stand-in");
+    evidence.push("Note: AlphaMissense does not score nonsense variants (missense-only model) — score above is a heuristic stand-in, not a real AM output");
     sources.push("ClinVar: Nonsense variants = Pathogenic (PVS1)");
   } else if (classification === "frameshift") {
     score = 0.86 + con * 0.08;
     evidence.push("Frameshift disrupts reading frame — PVS1 criterion");
   } else if (classification === "missense") {
     score = ensembleScore;
-    evidence.push(`AlphaMissense-style proxy: ${(am * 100).toFixed(0)}% pathogenic`);
-    evidence.push(`ESM1b-style proxy: score = ${BLOSUM62[fromAA]?.[toAA] ?? "N/A"}`);
+    evidence.push(`AlphaMissense-style proxy (heuristic, not real AM inference): ${(am * 100).toFixed(0)}% pathogenic`);
+    evidence.push(`ESM1b-style proxy (BLOSUM62-derived, not real ESM1b inference): score = ${BLOSUM62[fromAA]?.[toAA] ?? "N/A"}`);
     if (isRadicalChange(fromAA, toAA)) {
       evidence.push(`Radical AA change: ${fromAA}→${toAA} (chemical class switch)`);
       sources.push("Align-GVGD chemical severity matrix");
@@ -499,10 +537,10 @@ const buildPathogenicity = (
     const epi = assessEpistasis(position, classification, prev.position, prev.classification);
     if (epi === "synergistic") {
       score = Math.min(1, score * 1.25);
-      evidence.push("Synergistic epistasis with prior variant (compound effect)");
+      evidence.push("Synergistic epistasis with prior variant (compound effect) — sequence-distance heuristic, not structurally derived");
     } else if (epi === "antagonistic") {
       score *= 0.8;
-      evidence.push("Antagonistic epistasis — prior mutation may partially compensate");
+      evidence.push("Antagonistic epistasis — prior mutation may partially compensate (sequence-distance heuristic, not structurally derived)");
     }
   }
 
@@ -513,6 +551,10 @@ const buildPathogenicity = (
     sources.push("CARD / PharmGKB drug-variant database");
   }
 
+  // NOTE ON THRESHOLDS: real AlphaMissense's published operating points are <0.34 likely
+  // benign, 0.34-0.564 ambiguous, >0.564 likely pathogenic (Cheng et al. 2023, Science).
+  // The 5-tier ACMG-style breakdown below is a separate, proprietary heuristic layered on
+  // top of the ensemble score — it is NOT an official AlphaMissense or ACMG mapping.
   let cls: ACMGClass;
   if (score >= 0.85) cls = "pathogenic";
   else if (score >= 0.65) cls = "likely_pathogenic";
@@ -536,6 +578,9 @@ const buildPathogenicity = (
   };
 };
 
+// Fitness penalty constants. NOTE: these are conservation-weighted heuristics, not values
+// calibrated against a real distribution-of-fitness-effects (DFE) dataset. Flag for
+// domain-expert review before this score informs any real decision.
 const calculateFitness = (mutations: MutationData[]): number => {
   let fitness = 100;
   mutations.forEach((m, idx) => {
@@ -604,7 +649,7 @@ export default function MutationSimulator() {
   const genRef = useRef(0);
   const seqRef = useRef("");
   const mutsRef = useRef<MutationData[]>([]);
-  
+
   // Element references for sequence view jumps
   const posRefs = useRef<Map<number, HTMLSpanElement>>(new Map());
 
@@ -674,6 +719,15 @@ export default function MutationSimulator() {
     const genMuts: MutationData[] = [];
     let recurrentCount = 0;
 
+    // `liveMuts` is the running, ALWAYS-CURRENT-COORDINATES view of every mutation so far
+    // (previous generations + this one). It starts as a clone of prevMuts and gets both
+    // new entries appended and existing entries' `.position` remapped every time a
+    // structural event (indel, CNV, inversion, translocation) shifts the array underneath
+    // them. This is what gets stored as the new mutation list at the end of the generation
+    // — NOT `[...prevMuts, ...genMuts]`, which would silently leave every earlier
+    // mutation's position stale after the first length-changing event.
+    const liveMuts: MutationData[] = prevMuts.map(m => ({ ...m }));
+
     const deriveGenomicCoordinate = (seqIndex: number, length = 1): string | undefined => {
       const chrom = params.genomicChrom.trim();
       const start = parseInt(params.genomicStart, 10);
@@ -729,7 +783,9 @@ export default function MutationSimulator() {
 
       const pathogenicity = buildPathogenicity(mutData, curSeq.length, [...prevMuts, ...genMuts]);
       seqArr[i] = newBase;
-      genMuts.push({ ...mutData, pathogenicity, isRecurrent });
+      const fullMut: MutationData = { ...mutData, pathogenicity, isRecurrent };
+      genMuts.push(fullMut);
+      liveMuts.push({ ...fullMut }); // substitutions don't shift indices — no remap needed
     };
 
     // Substitutions
@@ -775,13 +831,14 @@ export default function MutationSimulator() {
       }
     }
 
-    // Indels
+    // Indels (replication slippage) — length-changing, so remap liveMuts immediately after
     if (rng.next() < effRate * 0.08) {
       const pos = Math.floor(rng.next() * seqArr.length);
       const conservation = estimateConservation(pos, curSeq.length);
       if (rng.next() > 0.5 && seqArr.length < 1500) {
         const insBase = BASES[Math.floor(rng.next() * 4)];
         seqArr.splice(pos, 0, insBase);
+        remapPositions(liveMuts, p => (p >= pos ? p + 1 : p));
         const context: MutationContext = pos < Math.floor(curSeq.length * 0.85) ? "coding" : "non-coding";
         const mutData: Omit<MutationData, "pathogenicity"> = {
           generation: g+1, position: pos, type:"insertion",
@@ -791,9 +848,13 @@ export default function MutationSimulator() {
           effect:"Insertion — +1 frameshift (replication slippage)",
           isRecurrent: false,
         };
-        genMuts.push({ ...mutData, pathogenicity: buildPathogenicity(mutData, curSeq.length, [...prevMuts, ...genMuts]) });
+        const pathogenicity = buildPathogenicity(mutData, curSeq.length, [...prevMuts, ...genMuts]);
+        const fullMut: MutationData = { ...mutData, pathogenicity };
+        genMuts.push(fullMut);
+        liveMuts.push({ ...fullMut });
       } else if (seqArr.length > 9) {
         const del = seqArr.splice(pos, 1)[0];
+        remapPositions(liveMuts, p => (p < pos ? p : p === pos ? null : p - 1));
         const context: MutationContext = pos < Math.floor(curSeq.length * 0.85) ? "coding" : "non-coding";
         const mutData: Omit<MutationData, "pathogenicity"> = {
           generation: g+1, position: pos, type:"deletion",
@@ -803,11 +864,14 @@ export default function MutationSimulator() {
           effect:"Deletion — −1 frameshift (replication slippage)",
           isRecurrent: false,
         };
-        genMuts.push({ ...mutData, pathogenicity: buildPathogenicity(mutData, curSeq.length, [...prevMuts, ...genMuts]) });
+        const pathogenicity = buildPathogenicity(mutData, curSeq.length, [...prevMuts, ...genMuts]);
+        const fullMut: MutationData = { ...mutData, pathogenicity };
+        genMuts.push(fullMut);
+        liveMuts.push({ ...fullMut });
       }
     }
 
-    // Block CNV
+    // Block CNV: 50–300bp duplication/deletion — length-changing, remap liveMuts immediately
     if (rng.next() < 0.04) {
       const blockLen = Math.floor(rng.next() * 251) + 50;
       const bStart   = Math.floor(rng.next() * Math.max(1, seqArr.length - blockLen));
@@ -816,6 +880,7 @@ export default function MutationSimulator() {
       if (rng.next() > 0.5 && seqArr.length < 2000) {
         const block = seqArr.slice(bStart, bStart + blockLen);
         seqArr.splice(bStart + blockLen, 0, ...block);
+        remapPositions(liveMuts, p => (p >= bStart + blockLen ? p + blockLen : p));
         const mutData: Omit<MutationData, "pathogenicity"> = {
           generation: g+1, position: bStart, type:"insertion",
           original:`${blockLen}bp`, mutated:`${blockLen}bp×2`,
@@ -826,9 +891,17 @@ export default function MutationSimulator() {
           genomicCoordinate,
           isRecurrent: false,
         };
-        genMuts.push({ ...mutData, pathogenicity: buildPathogenicity(mutData, curSeq.length, [...prevMuts, ...genMuts]) });
+        const pathogenicity = buildPathogenicity(mutData, curSeq.length, [...prevMuts, ...genMuts]);
+        const fullMut: MutationData = { ...mutData, pathogenicity };
+        genMuts.push(fullMut);
+        liveMuts.push({ ...fullMut });
       } else if (seqArr.length - blockLen > 9) {
         seqArr.splice(bStart, blockLen);
+        remapPositions(liveMuts, p => {
+          if (p < bStart) return p;
+          if (p >= bStart + blockLen) return p - blockLen;
+          return null;
+        });
         const mutData: Omit<MutationData, "pathogenicity"> = {
           generation: g+1, position: bStart, type:"deletion",
           original:`${blockLen}bp`, mutated:"—",
@@ -839,11 +912,15 @@ export default function MutationSimulator() {
           genomicCoordinate,
           isRecurrent: false,
         };
-        genMuts.push({ ...mutData, pathogenicity: buildPathogenicity(mutData, curSeq.length, [...prevMuts, ...genMuts]) });
+        const pathogenicity = buildPathogenicity(mutData, curSeq.length, [...prevMuts, ...genMuts]);
+        const fullMut: MutationData = { ...mutData, pathogenicity };
+        genMuts.push(fullMut);
+        liveMuts.push({ ...fullMut });
       }
     }
 
-    // Structural variants
+    // Structural variants: inversion (reorders within a fixed-length block) or
+    // intrachromosomal translocation (excise + reinsert elsewhere) — both remap liveMuts.
     if (rng.next() < 0.02 && seqArr.length > 100) {
       const blockLen = Math.floor(rng.next() * 61) + 20;
       const bStart = Math.floor(rng.next() * Math.max(1, seqArr.length - blockLen));
@@ -851,10 +928,18 @@ export default function MutationSimulator() {
       const genomicCoordinate = deriveGenomicCoordinate(bStart, blockLen);
 
       if (rng.next() < 0.5) {
+        // Inversion flips a double-stranded segment end-for-end; reading the same strand
+        // 5'->3' through it yields the reverse COMPLEMENT of the original.
         const complement: Record<string, string> = { A: "T", T: "A", C: "G", G: "C" };
         const block = seqArr.slice(bStart, bStart + blockLen);
         const inverted = block.slice().reverse().map(b => complement[b] ?? b);
         seqArr.splice(bStart, blockLen, ...inverted);
+        // Length is unchanged, but positions INSIDE the block are now mirrored around its
+        // midpoint — a substitution originally at bStart now sits at bStart+blockLen-1, etc.
+        remapPositions(liveMuts, p => {
+          if (p < bStart || p >= bStart + blockLen) return p;
+          return bStart + (bStart + blockLen - 1 - p);
+        });
         const mutData: Omit<MutationData, "pathogenicity"> = {
           generation: g+1, position: bStart, type:"inversion",
           original:`${blockLen}bp`, mutated:`${blockLen}bp inverted`,
@@ -865,12 +950,27 @@ export default function MutationSimulator() {
           genomicCoordinate,
           isRecurrent: false,
         };
-        genMuts.push({ ...mutData, pathogenicity: buildPathogenicity(mutData, curSeq.length, [...prevMuts, ...genMuts]) });
+        const pathogenicity = buildPathogenicity(mutData, curSeq.length, [...prevMuts, ...genMuts]);
+        const fullMut: MutationData = { ...mutData, pathogenicity };
+        genMuts.push(fullMut);
+        liveMuts.push({ ...fullMut });
       } else if (seqArr.length - blockLen > 30) {
         const block = seqArr.splice(bStart, blockLen);
         let insertAt = Math.floor(rng.next() * Math.max(1, seqArr.length));
         if (insertAt === bStart) insertAt = (insertAt + 10) % Math.max(1, seqArr.length);
         seqArr.splice(insertAt, 0, ...block);
+        // Two-step remap: bases that were inside the excised block move to insertAt+offset
+        // (their relative order is preserved, no reversal); everything else shifts as a
+        // plain excision followed by a plain insertion at insertAt.
+        remapPositions(liveMuts, p => {
+          let intermediate: number | null;
+          let movedOffset: number | null = null;
+          if (p < bStart) intermediate = p;
+          else if (p >= bStart + blockLen) intermediate = p - blockLen;
+          else { intermediate = null; movedOffset = p - bStart; }
+          if (movedOffset !== null) return insertAt + movedOffset;
+          return intermediate! >= insertAt ? intermediate! + blockLen : intermediate!;
+        });
         const newCoord = deriveGenomicCoordinate(insertAt, blockLen);
         const mutData: Omit<MutationData, "pathogenicity"> = {
           generation: g+1, position: bStart, type:"translocation",
@@ -882,12 +982,15 @@ export default function MutationSimulator() {
           genomicCoordinate: genomicCoordinate ? `${genomicCoordinate} → ${newCoord ?? "unknown"}` : undefined,
           isRecurrent: false,
         };
-        genMuts.push({ ...mutData, pathogenicity: buildPathogenicity(mutData, curSeq.length, [...prevMuts, ...genMuts]) });
+        const pathogenicity = buildPathogenicity(mutData, curSeq.length, [...prevMuts, ...genMuts]);
+        const fullMut: MutationData = { ...mutData, pathogenicity };
+        genMuts.push(fullMut);
+        liveMuts.push({ ...fullMut });
       }
     }
 
     const newSeq = seqArr.join("");
-    const nextMuts = [...prevMuts, ...genMuts];
+    const nextMuts = liveMuts; // fully remapped — safe to store and display directly
     const nextFitness = calculateFitness(nextMuts);
 
     setCurrentSequence(newSeq);
@@ -996,8 +1099,9 @@ export default function MutationSimulator() {
     a.click();
   };
 
-  const scrollToMutation = (pos: number) => {
-    const el = posRefs.current.get(pos);
+  const scrollToMutation = (mut: MutationData) => {
+    if (mut.positionStale) return; // no valid base to jump to — site was later deleted
+    const el = posRefs.current.get(mut.position);
     if (el) {
       el.scrollIntoView({ behavior: "smooth", block: "center" });
       el.style.outline = "2px solid #66c2ff";
@@ -1005,10 +1109,11 @@ export default function MutationSimulator() {
     }
   };
 
-  // Map mutated positions for visual lookup
+  // Map CURRENT mutated positions for visual lookup. Stale entries (their original base
+  // was later deleted by an indel/CNV) are excluded — there's no real base left to color.
   const mutationMap = useMemo(() => {
     const map = new Map<number, MutationData>();
-    mutations.forEach(m => map.set(m.position, m));
+    mutations.forEach(m => { if (!m.positionStale) map.set(m.position, m); });
     return map;
   }, [mutations]);
 
@@ -1032,6 +1137,7 @@ export default function MutationSimulator() {
     m.pathogenicity.literature.map(l => ({ ...l, mutation: m.aminoAcidChange }))
   );
   const hasGenomicAnchor = Boolean(params.genomicChrom && params.genomicStart && params.genomicEnd && params.genomicStrand);
+  const sequenceMapTooLarge = currentSequence.length > 5000;
 
   // Styles
   const card: React.CSSProperties = { border:"1px solid rgba(255,255,255,0.1)", borderRadius:16, padding:"18px 20px", background:"rgba(255,255,255,0.03)" };
@@ -1125,38 +1231,47 @@ export default function MutationSimulator() {
                 <div style={{ marginTop: 16 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
                     <span style={label13}>Live Sequence Map</span>
-                    <span style={{ fontSize: 11, color: "#88a0b9" }}>Hover base for details</span>
+                    <span style={{ fontSize: 11, color: "#88a0b9" }}>
+                      {sequenceMapTooLarge ? "Sequence too large to render per-base view" : "Hover base for details"}
+                    </span>
                   </div>
-                  <div style={{
-                    maxHeight: 180, overflowY: "auto", background: "rgba(4,17,31,0.95)", border: "1px solid rgba(255,255,255,0.07)",
-                    borderRadius: 10, padding: 12, fontFamily: "monospace", fontSize: 13, lineHeight: 1.8, wordBreak: "break-all"
-                  }}>
-                    {currentSequence.split("").map((base, idx) => {
-                      const mut = mutationMap.get(idx);
-                      const isMutated = Boolean(mut);
-                      const bgColor = mut ? acmgColor(mut.pathogenicity.classification) : "transparent";
-                      const textColor = mut ? "#04111f" : "#f6f8fb";
-                      return (
-                        <span
-                          key={idx}
-                          ref={el => { if (el) posRefs.current.set(idx, el); }}
-                          title={mut ? `Pos ${idx + 1}: ${mut.original}→${mut.mutated} (${mut.pathogenicity.classification})` : `Pos ${idx + 1}: ${base}`}
-                          style={{
-                            backgroundColor: bgColor,
-                            color: textColor,
-                            fontWeight: isMutated ? 800 : 400,
-                            padding: "1px 2px",
-                            borderRadius: 2,
-                            display: "inline-block",
-                            cursor: isMutated ? "pointer" : "default",
-                            transition: "all 0.2s ease"
-                          }}
-                        >
-                          {base}
-                        </span>
-                      );
-                    })}
-                  </div>
+                  {sequenceMapTooLarge ? (
+                    <div style={{ padding: 16, textAlign: "center", color: "#88a0b9", fontSize: 12, border: "1px solid rgba(255,255,255,0.07)", borderRadius: 10 }}>
+                      Per-base rendering is disabled above 5,000 bp to avoid freezing the browser with tens of thousands of
+                      DOM nodes. Use the variant log below, or the 🔍 jump links, to inspect specific positions.
+                    </div>
+                  ) : (
+                    <div style={{
+                      maxHeight: 180, overflowY: "auto", background: "rgba(4,17,31,0.95)", border: "1px solid rgba(255,255,255,0.07)",
+                      borderRadius: 10, padding: 12, fontFamily: "monospace", fontSize: 13, lineHeight: 1.8, wordBreak: "break-all"
+                    }}>
+                      {currentSequence.split("").map((base, idx) => {
+                        const mut = mutationMap.get(idx);
+                        const isMutated = Boolean(mut);
+                        const bgColor = mut ? acmgColor(mut.pathogenicity.classification) : "transparent";
+                        const textColor = mut ? "#04111f" : "#f6f8fb";
+                        return (
+                          <span
+                            key={idx}
+                            ref={el => { if (el) posRefs.current.set(idx, el); }}
+                            title={mut ? `Pos ${idx + 1}: ${mut.original}→${mut.mutated} (${mut.pathogenicity.classification})` : `Pos ${idx + 1}: ${base}`}
+                            style={{
+                              backgroundColor: bgColor,
+                              color: textColor,
+                              fontWeight: isMutated ? 800 : 400,
+                              padding: "1px 2px",
+                              borderRadius: 2,
+                              display: "inline-block",
+                              cursor: isMutated ? "pointer" : "default",
+                              transition: "all 0.2s ease"
+                            }}
+                          >
+                            {base}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -1190,8 +1305,10 @@ export default function MutationSimulator() {
               </div>
               {!hasGenomicAnchor && (
                 <div style={{ fontSize:11, color:"#88a0b9", marginTop:6 }}>
-                  Without a complete genomic range and strand, gnomAD AF can't be honestly looked up — this tool won't guess.
-                  Start must always be the lower genomic coordinate and end the higher one.
+                  Without a complete genomic range and strand, gnomAD AF can't be honestly looked up (requires genomic anchor)
+                  — this tool won't guess. Start must always be the lower genomic coordinate and end the higher one (standard
+                  Ensembl/RefSeq/UCSC convention) — strand alone indicates reading direction. Also assumes the uploaded
+                  sequence is a single contiguous genomic span with no introns/splicing.
                 </div>
               )}
             </div>
@@ -1251,13 +1368,19 @@ export default function MutationSimulator() {
                     <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:6 }}>
                       <div>
                         <strong style={{ color:"#66c2ff" }}>Gen {m.generation}</strong>
-                        <span 
-                          onClick={() => scrollToMutation(m.position)} 
-                          style={{ color:"#66c2ff", fontSize:12, marginLeft:8, cursor:"pointer", textDecoration:"underline" }}
-                          title="Click to locate on sequence map"
-                        >
-                          {m.type} · pos {m.position + 1} 🔍
-                        </span>
+                        {m.positionStale ? (
+                          <span style={{ color:"#88a0b9", fontSize:12, marginLeft:8 }} title="This site was later removed by an indel or deletion — no current base to jump to">
+                            {m.type} · originally pos {m.position + 1} (site since deleted)
+                          </span>
+                        ) : (
+                          <span
+                            onClick={() => scrollToMutation(m)}
+                            style={{ color:"#66c2ff", fontSize:12, marginLeft:8, cursor:"pointer", textDecoration:"underline" }}
+                            title="Click to locate on sequence map"
+                          >
+                            {m.type} · pos {m.position + 1} 🔍
+                          </span>
+                        )}
                         {m.isRecurrent && <span style={{ marginLeft:8, fontSize:11, color:"#ffd166", fontWeight:600 }}>⟲ RECURRENT SITE</span>}
                       </div>
                       <span style={{ fontSize:11, fontWeight:700, color: acmgColor(m.pathogenicity.classification), padding:"2px 8px", borderRadius:4, background:"rgba(0,0,0,0.3)" }}>
@@ -1307,7 +1430,8 @@ export default function MutationSimulator() {
                     <div style={{ fontSize:13 }}>{m.original}→{m.mutated} · Gen {m.generation} · {m.classification}</div>
                     <div style={{ fontSize:11, color:"#88a0b9", marginTop:4 }}>
                       This position has been mutated to the same base more than once within this simulated lineage —
-                      a mutational hotspot signature.
+                      a mutational hotspot signature. (Note: this is distinct from convergent evolution, which refers to
+                      independent lineages arriving at the same substitution — this simulator only ever runs one lineage.)
                     </div>
                   </div>
                 )) : <div style={{ color:"#88a0b9", textAlign:"center", padding:"24px 0" }}>No recurrent mutations detected yet.</div>)}
@@ -1364,7 +1488,7 @@ export default function MutationSimulator() {
                     </select>
                   </div>
                   {errors.temperature && <div style={{ fontSize:11, color:"#ff7b7b", marginTop:3 }}>Range: {errors.temperature}</div>}
-                  <div style={{ fontSize:10, color:"#6b8299", marginTop:2 }}>Q10-style heuristic (~2x rate per 10°C).</div>
+                  <div style={{ fontSize:10, color:"#6b8299", marginTop:2 }}>Q10-style heuristic (~2x rate per 10°C) — not calibrated to a specific published mutation-rate dataset.</div>
                 </div>
 
                 {/* pH */}
@@ -1376,6 +1500,7 @@ export default function MutationSimulator() {
                   </span>
                   <input type="range" min="0" max="14" step="0.1" value={params.pH} style={{ width:"100%" }}
                     onChange={e => setParams(p=>({...p,pH:+e.target.value}))} />
+                  <div style={{ fontSize:10, color:"#6b8299", marginTop:2 }}>Simplified: real deamination kinetics are U-shaped across pH (accelerated at both extremes), not cleanly split by direction.</div>
                 </div>
 
                 {/* Mutation rate */}
@@ -1383,6 +1508,7 @@ export default function MutationSimulator() {
                   <span style={label13}>Base substitution rate · {params.substitutionRate.toExponential(1)}/site</span>
                   <input type="range" min="0.000001" max="0.001" step="0.000001" value={params.substitutionRate} style={{ width:"100%" }}
                     onChange={e => setParams(p=>({...p,substitutionRate:+e.target.value}))} />
+                  <div style={{ fontSize:10, color:"#88a0b9", marginTop:2 }}>Scaled for simulation visibility. Biological: ~10⁻⁹/site/replication.</div>
                 </div>
 
                 {/* Generations */}
@@ -1463,6 +1589,7 @@ export default function MutationSimulator() {
                   <span style={label13}>Reproducibility seed</span>
                   <input type="number" value={params.seed} style={inputStyle}
                     onChange={e => setParams(p=>({...p,seed:+e.target.value}))} />
+                  <div style={{ fontSize:10, color:"#88a0b9", marginTop:2 }}>Same seed + same params = identical run.</div>
                 </div>
               </div>
 
@@ -1483,7 +1610,7 @@ export default function MutationSimulator() {
               <h2 style={{ margin:"0 0 14px", fontSize:18 }}>Fitness & scoring engines</h2>
               <div style={{ ...infoBox, textAlign:"center", marginBottom:12 }}>
                 <div style={{ fontSize:30, fontWeight:800, color: fitness>75?"#66c2ff":fitness>50?"#ffd166":"#ff6450" }}>{fitness.toFixed(1)}</div>
-                <div style={{ fontSize:12, color:"#88a0b9", marginTop:2 }}>Fitness — epistasis-weighted, conservation-scaled</div>
+                <div style={{ fontSize:12, color:"#88a0b9", marginTop:2 }}>Fitness — epistasis-weighted, conservation-scaled (unvalidated heuristic constants)</div>
               </div>
               <div style={{ height:6, borderRadius:3, background:"rgba(255,255,255,0.07)", marginBottom:12, overflow:"hidden" }}>
                 <div style={{ width:`${fitness}%`, height:"100%", background:`linear-gradient(90deg,#ff6450,#ffd166,#66c2ff)`, borderRadius:3 }} />
@@ -1491,7 +1618,7 @@ export default function MutationSimulator() {
 
               {/* ACMG breakdown */}
               <div style={{ ...infoBox, marginBottom:8 }}>
-                <div style={{ fontSize:12, color:"#88a0b9", marginBottom:6 }}>Variant classification tiers</div>
+                <div style={{ fontSize:12, color:"#88a0b9", marginBottom:6 }}>Variant classification tiers (proprietary heuristic — not an official ACMG or AlphaMissense mapping)</div>
                 {(["pathogenic","likely_pathogenic","uncertain","likely_benign","benign"] as ACMGClass[]).map(cls => {
                   const count = mutations.filter(m=>m.pathogenicity.classification===cls).length;
                   return (
@@ -1509,7 +1636,7 @@ export default function MutationSimulator() {
                 const last = mutations[mutations.length - 1];
                 return (
                   <div style={infoBox}>
-                    <div style={{ fontSize:12, color:"#88a0b9", marginBottom:6 }}>Last variant — dual model scores</div>
+                    <div style={{ fontSize:12, color:"#88a0b9", marginBottom:6 }}>Last variant — dual model scores (heuristic proxies, see disclosure above)</div>
                     <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:6, fontSize:12 }}>
                       <div>
                         <div style={{ color:"#88a0b9" }}>AlphaMissense-style proxy</div>
@@ -1524,6 +1651,11 @@ export default function MutationSimulator() {
                         </div>
                       </div>
                     </div>
+                    {last.pathogenicity.drugResistance.length > 0 && (
+                      <div style={{ marginTop:8, padding:"6px 8px", background:"rgba(255,100,80,0.1)", borderRadius:6, fontSize:11 }}>
+                        ⚠ {last.pathogenicity.drugResistance[0].drug}: {last.pathogenicity.drugResistance[0].effect.replace("_"," ")}
+                      </div>
+                    )}
                   </div>
                 );
               })()}
@@ -1534,11 +1666,11 @@ export default function MutationSimulator() {
               <h2 style={{ margin:"0 0 14px", fontSize:18 }}>Research context</h2>
               <div style={{ display:"grid", gap:8 }}>
                 {[
-                  { label:"Evidence sources", value:"ClinVar · gnomAD · UniProt · PubMed (live API)" },
-                  { label:"Scoring models", value:"AlphaMissense-style & ESM1b-style heuristic proxies" },
-                  { label:"Resistance DB", value:"CARD · PharmGKB · DGIdb" },
-                  { label:"Ti/Tv ratio", value:`Observed: ${titvRatio} · Reference: ~2.0 genome-wide` },
-                  { label:"Recurrent mutation events", value:`${recurrentMuts.length} detected` },
+                  { label:"Evidence sources", value:"ClinVar · gnomAD (requires genomic anchor) · UniProt · PubMed (live API)" },
+                  { label:"Scoring models", value:"AlphaMissense-style & ESM1b-style heuristic proxies (BLOSUM62 + conservation) — NOT live model inference" },
+                  { label:"Resistance DB", value:"CARD · PharmGKB · DGIdb — a small curated subset, not a full database mirror" },
+                  { label:"Ti/Tv ratio", value:`Observed: ${titvRatio} · Reference: ~2.0 genome-wide (coding regions often skew closer to ~3.0)` },
+                  { label:"Recurrent mutation events", value:`${recurrentMuts.length} detected — same-site recurrence within this lineage, not convergent evolution` },
                   { label:"API status", value: apiLoading ? "Querying NCBI / gnomAD / UniProt…" : mutations.length > 0 ? "Enrichment complete" : "Awaiting variants" },
                 ].map(row => (
                   <div key={row.label} style={infoBox}>
